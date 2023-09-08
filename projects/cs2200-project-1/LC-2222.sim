@@ -1,5 +1,5 @@
 {
-  "version": "1.8.2",
+  "version": "1.9.1",
   "globalBitSize": 32,
   "clockSpeed": 1024,
   "circuits": [
@@ -7,19 +7,25 @@
       "name": "Datapath",
       "components": [
         {
-          "name": "com.ra4king.circuitsim.gui.peers.misc.Text",
-          "x": 2,
-          "y": 4,
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 8,
+          "y": 13,
           "properties": {
-            "Text": "Your Name"
+            "Label": "GLOBAL_BUS",
+            "Direction": "EAST",
+            "Width": "8",
+            "Bitsize": "32"
           }
         },
         {
-          "name": "com.ra4king.circuitsim.gui.peers.misc.Text",
-          "x": 2,
-          "y": 7,
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 8,
+          "y": 25,
           "properties": {
-            "Text": "Your GTID"
+            "Label": "GLOBAL_BUS",
+            "Direction": "EAST",
+            "Width": "8",
+            "Bitsize": "32"
           }
         },
         {
@@ -27,11 +33,133 @@
           "x": 2,
           "y": 10,
           "properties": {
-            "Text": "Section A/B/GR"
+            "Text": "Section C"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.misc.Text",
+          "x": 2,
+          "y": 7,
+          "properties": {
+            "Text": "903681630"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.RegisterPeer",
+          "x": 20,
+          "y": 12,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.misc.Text",
+          "x": 2,
+          "y": 4,
+          "properties": {
+            "Text": "Vy Mai"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.PinPeer",
+          "x": 14,
+          "y": 16,
+          "properties": {
+            "Label location": "WEST",
+            "Label": "LdPC",
+            "Is input?": "Yes",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.PinPeer",
+          "x": 21,
+          "y": 21,
+          "properties": {
+            "Label location": "WEST",
+            "Label": "DrPC",
+            "Is input?": "Yes",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer",
+          "x": 25,
+          "y": 21,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "SOUTH",
+            "Bitsize": "32"
           }
         }
       ],
-      "wires": []
+      "wires": [
+        {
+          "x": 16,
+          "y": 17,
+          "length": 1,
+          "isHorizontal": false
+        },
+        {
+          "x": 16,
+          "y": 17,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 18,
+          "y": 14,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 18,
+          "y": 15,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 18,
+          "y": 15,
+          "length": 2,
+          "isHorizontal": false
+        },
+        {
+          "x": 18,
+          "y": 26,
+          "length": 8,
+          "isHorizontal": true
+        },
+        {
+          "x": 23,
+          "y": 22,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 24,
+          "y": 14,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 26,
+          "y": 14,
+          "length": 7,
+          "isHorizontal": false
+        },
+        {
+          "x": 26,
+          "y": 23,
+          "length": 3,
+          "isHorizontal": false
+        }
+      ]
     },
     {
       "name": "RAM",
@@ -43,6 +171,7 @@
           "properties": {
             "Label": "Write",
             "Direction": "EAST",
+            "Width": "4",
             "Bitsize": "1"
           }
         },
@@ -53,6 +182,7 @@
           "properties": {
             "Label": "Read",
             "Direction": "NORTH",
+            "Width": "4",
             "Bitsize": "1"
           }
         },
@@ -63,6 +193,7 @@
           "properties": {
             "Label": "Write",
             "Direction": "WEST",
+            "Width": "4",
             "Bitsize": "1"
           }
         },
@@ -73,19 +204,34 @@
           "properties": {
             "Label": "Read",
             "Direction": "WEST",
+            "Width": "4",
             "Bitsize": "1"
           }
         },
         {
-          "name": "com.ra4king.circuitsim.gui.peers.gates.NotGatePeer",
-          "x": 10,
-          "y": 34,
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 29,
+          "y": 32,
           "properties": {
             "Label location": "NORTH",
-            "Negate 0": "No",
             "Label": "",
-            "Direction": "EAST",
-            "Bitsize": "1"
+            "Value": "1",
+            "Direction": "NORTH",
+            "Bitsize": "1",
+            "Base": "BINARY"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 34,
+          "y": 28,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Value": "0",
+            "Direction": "WEST",
+            "Bitsize": "1",
+            "Base": "BINARY"
           }
         },
         {
@@ -194,41 +340,6 @@
           }
         },
         {
-          "name": "com.ra4king.circuitsim.gui.peers.memory.RAMPeer",
-          "x": 24,
-          "y": 23,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Bitsize": "32",
-            "Address bits": "16"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 29,
-          "y": 32,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Value": "1",
-            "Direction": "NORTH",
-            "Bitsize": "1"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 34,
-          "y": 28,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Value": "0",
-            "Direction": "WEST",
-            "Bitsize": "1"
-          }
-        },
-        {
           "name": "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer",
           "x": 37,
           "y": 17,
@@ -248,6 +359,29 @@
             "Label": "",
             "Direction": "SOUTH",
             "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.NotGatePeer",
+          "x": 10,
+          "y": 34,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.RAMPeer",
+          "x": 24,
+          "y": 23,
+          "properties": {
+            "Separate Load/Store Ports?": "No",
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "32",
+            "Address bits": "16"
           }
         }
       ],
