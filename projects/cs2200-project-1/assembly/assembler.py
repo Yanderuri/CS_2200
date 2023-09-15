@@ -15,11 +15,17 @@ VERBOSE = False
 FILE_NAME = ''
 ISA = None
 RE_PARAMS = re.compile('^(?P<key>.+)=(?P<value>.+)$')
+SAVE_INST = False
+inst_file = None
 
 def verbose(s):
     if VERBOSE:
         print(s)
         
+def print_inst(inst):
+    if SAVE_INST:
+        inst_file.write(inst)
+
 def error(line_number, message):
     print("Error {}:{}: {}.\n".format(FILE_NAME, line_number, message))
 
@@ -65,6 +71,8 @@ def pass1(file):
                 ISA.SYMBOL_TABLE[label] = pc
                 
         if op:
+            if SAVE_INST:
+                print_inst(op+operands.rstrip()+'\n')
             instr = None
             isOR = None
             try:
@@ -184,6 +192,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--separator', required=False, type=separator, default='\\n', help='the separator to use between instructions (accepts \s for space and standard escape characters) [default: \\n]')
     parser.add_argument('--sym', '--symbols', action='store_true', help="output an additional file containing the assembled program's symbol table")
     parser.add_argument('--params', required=False, type=str, help='custom parameters to pass to an architecture, formatted as "key1=value1, key2=value2, key3=value3"')
+    parser.add_argument('--save', required=False, action='store_true')
     args = parser.parse_args()
     
 
@@ -204,6 +213,10 @@ if __name__ == "__main__":
         exit(1)
 
     VERBOSE = args.verbose
+    if args.save:
+        SAVE_INST = True
+        inst_file = open('inst.s', 'w', encoding='UTF8')
+
     FILE_NAME = os.path.basename(args.asmfile)
     
     with open(args.asmfile, 'r') as read_file:

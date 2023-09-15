@@ -490,7 +490,7 @@ class sw(MemInstruction):
 
 
 class jalr(Instruction):
-    __RE_JALR = re.compile(r'^\s*(?P<RA>\$\w+?)\s*,\s*(?P<AT>\$\w+?)\s*$')
+    __RE_JALR = re.compile(r'^\s*(?P<AT>\$\w+?)\s*,\s*(?P<RA>\$\w+?)\s*$')
 
     @classmethod
     def opcode(cls):
@@ -511,8 +511,8 @@ class jalr(Instruction):
             raise RuntimeError(
                 "Operands '{}' are in an incorrect format.".format(operands.strip()))
 
-        result_list.append(parse_register(match.group('RA')))
         result_list.append(parse_register(match.group('AT')))
+        result_list.append(parse_register(match.group('RA')))
 
         return ''.join(result_list)
 

@@ -160,9 +160,9 @@ def print_instruction():
         offset = bit_range(IREG, 19, 0)
         return '{} {}, 0x{:05X}'.format(OP_NAME[op], REG_NAME[dr], int2c(offset))
     elif op == '0110':                 # JALR
-        ra = bit_range(IREG, 27, 24)
-        at = bit_range(IREG, 23, 20)
-        return '{} {}, {}'.format(OP_NAME[op], REG_NAME[ra], REG_NAME[at])
+        at = bit_range(IREG, 27, 24)
+        ra = bit_range(IREG, 23, 20)
+        return '{} {}, {}'.format(OP_NAME[op], REG_NAME[at], REG_NAME[ra])
     elif op == '0111':                  # HALT
         return OP_NAME[op]
     elif op == '1000':                  #BLT
@@ -181,7 +181,6 @@ def print_instruction():
         sr1 = bit_range(IREG, 27, 24)
         sr2 = bit_range(IREG, 23,20)
         addr = bit_range(IREG, 19, 0)
-        return op
         return '{} {}, {}, 0x{:06X}'.format(OP_NAME[op], REG_NAME[sr1], REG_NAME[sr2], uint(addr))
     elif op == '1011':                  # OR/XOR
         op_name = OP_NAME[op]
@@ -189,7 +188,8 @@ def print_instruction():
             op_name = 'X'+op_name
         dr = bit_range(IREG, 27, 24)
         sr1 = bit_range(IREG, 23, 20)
-        return '{} {}, {}'.format(op_name, REG_NAME[dr], REG_NAME[sr1])
+        sr2 = bit_range(IREG, 3, 0)
+        return '{} {}, {}, {}'.format(op_name, REG_NAME[dr], REG_NAME[sr1], REG_NAME[sr2])
     elif op == '1111':                   # INC
         dr = bit_range(IREG, 27, 24)
         return '{} {}'.format(OP_NAME[op], REG_NAME[dr])
@@ -273,8 +273,8 @@ def step_instruction():
         REGS[dr_regno] = force_unsigned(PC + offset_int, 32)
 
     elif OP_NAME[op] == 'JALR':
-        ra_regno = uint(bit_range(IREG, 27, 24))
-        at_regno = uint(bit_range(IREG, 23, 20))
+        at_regno = uint(bit_range(IREG, 27, 24))
+        ra_regno = uint(bit_range(IREG, 23, 20))
         REGS[ra_regno] = PC
         PC = REGS[at_regno]
 
