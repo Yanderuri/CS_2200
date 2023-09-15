@@ -9,45 +9,52 @@
 
 main:
     add     $zero, $zero, $zero     ! TODO: Here, you need to get the address of the stack
-                                    ! using the provided label to initialize the stack pointer.
-                                    ! load the label address into $sp and in the next instruction,
+    lea     $sp, stack              ! using the provided label to initialize the stack pointer.
+    lw      $fp, 0($sp)             ! load the label address into $sp and in the next instruction,
     lw      $sp, 0($sp)             ! use $sp as base register to load the value (0xFFFF) into $sp.
 
 
     lea     $at, hanoi              ! loads address of hanoi label into $at
 
-    lea     $a0, testNumDisks2      ! loads address of number into $a0
+    lea     $a0, testNumDisks3      ! loads address of number into $a0
     lw      $a0, 0($a0)             ! loads value of number into $a0
+    ; addi $a0, $zero, 10             ! testing purposes
 
     jalr    $at, $ra                ! jump to hanoi, set $ra to return addr
     halt                            ! when we return, just halt
 
 hanoi:
-    add     $zero, $zero, $zero     ! TODO: perform post-call portion of
-                                    ! the calling convention. Make sure to
-                                    ! save any registers you will be using!
+    addi $sp, $sp, -1               ! TODO: perform post-call portion of
+    sw $fp, 0($sp)                  ! the calling convention. Make sure to
+    add $fp, $sp, $zero             ! save any registers you will be using!
 
-    add     $zero, $zero, $zero     ! TODO: Implement the following pseudocode in assembly:
-                                    ! IF ($a0 == 1)
-                                    !    GOTO base
-                                    ! ELSE
+                                    ! TODO: Implement the following pseudocode in assembly:
+    addi $t0, $zero, 0x01           ! IF ($a0 == 1)
+    beq $t0, $a0, base              !    GOTO base
+    beq $zero, $zero, else          ! ELSE
                                     !    GOTO else
 
 else:
-    add     $zero, $zero, $zero     ! TODO: perform recursion after decrementing
-                                    ! the parameter by 1. Remember, $a0 holds the
+                                    ! TODO: perform recursion after decrementing
+    addi $a0, $a0, -1               ! the parameter by 1. Remember, $a0 holds the
                                     ! parameter value.
-
-    add     $zero, $zero, $zero     ! TODO: Implement the following pseudocode in assembly:
-                                    ! $v0 = 2 * $v0 + 1
-                                    ! RETURN $v0
+    addi $sp, $sp, -1
+    sw $ra, 0($sp)
+    lea $at, hanoi
+    jalr $at, $ra
+    
+    lw $ra, 0($sp)
+    add $v0, $v0, $v0               ! TODO: Implement the following pseudocode in assembly:
+    addi $v0, $v0, 0x01             ! $v0 = 2 * $v0 + 1
+    beq $zero, $zero, teardown      ! RETURN $v0
 
 base:
-    add     $zero, $zero, $zero     ! TODO: Return 1
+    addi $v0, $zero, 0x01           ! TODO: Return 1
+    beq $zero, $zero, teardown
 
 teardown:
-    add     $zero, $zero, $zero     ! TODO: perform pre-return portion
-                                    ! of the calling convention
+    lw $fp, 0($fp)                  ! TODO: perform pre-return portion
+    addi $sp, $fp, -1             ! of the calling convention
     jalr    $ra, $zero              ! return to caller
 
 
