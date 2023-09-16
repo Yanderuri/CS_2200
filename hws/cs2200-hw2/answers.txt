@@ -8,3 +8,5 @@ Question 1
 ----------
 
 /* Fix me */
+lea $ra, 0
+beq $zero, $zero, target

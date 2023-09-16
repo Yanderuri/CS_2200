@@ -24,7 +24,7 @@ main:
     halt                            ! when we return, just halt
 
 hanoi:
-    addi $sp, $sp, -1               ! TODO: perform post-call portion of
+    addi $sp, $sp, -2               ! TODO: perform post-call portion of
     sw $fp, 0($sp)                  ! the calling convention. Make sure to
     add $fp, $sp, $zero             ! save any registers you will be using!
 
@@ -35,15 +35,14 @@ hanoi:
                                     !    GOTO else
 
 else:
-                                    ! TODO: perform recursion after decrementing
-    addi $a0, $a0, -1               ! the parameter by 1. Remember, $a0 holds the
+    addi $a0, $a0, -1               ! TODO: perform recursion after decrementing
+                                    ! the parameter by 1. Remember, $a0 holds the
                                     ! parameter value.
-    addi $sp, $sp, -1
-    sw $ra, 0($sp)
+    sw $ra, 1($sp)
     lea $at, hanoi
     jalr $at, $ra
     
-    lw $ra, 0($sp)
+    lw $ra, 1($sp)
     add $v0, $v0, $v0               ! TODO: Implement the following pseudocode in assembly:
     addi $v0, $v0, 0x01             ! $v0 = 2 * $v0 + 1
     beq $zero, $zero, teardown      ! RETURN $v0
@@ -54,7 +53,7 @@ base:
 
 teardown:
     lw $fp, 0($fp)                  ! TODO: perform pre-return portion
-    addi $sp, $fp, -1             ! of the calling convention
+    addi $sp, $fp, 0                ! of the calling convention
     jalr    $ra, $zero              ! return to caller
 
 
