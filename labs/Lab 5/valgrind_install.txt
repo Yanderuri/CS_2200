@@ -1,0 +1,3 @@
+# Install valgrind in the docker container
+apt update
+apt install valgrind
