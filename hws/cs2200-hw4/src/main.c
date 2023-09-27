@@ -1,6 +1,6 @@
 /**
- * Name: <your name>
- * GTID: <your GTID>
+ * Name: Vy Mai
+ * GTID: 903681630
  */
 
 /*
@@ -8,6 +8,7 @@
  */
 
 #include "main.h"
+
 
 int length = 0;
 int tests = 0;
@@ -33,30 +34,31 @@ int main(int argc, char *argv[])
      * When you are done with this section and have gotten your GDB screenshot, delete the entire line.
      * 
      */
-
-
-
-
-
-
-
-
-
-    return 0;}/**    <-  DELETE ME
-    *****************************************************************************************************
-
-
-
+    int opt = getopt(argc, argv, "l:t");
+    switch(opt){
+        case 'l':
+            length = atoi(optarg);
+            tests = 0;
+            break;
+        case 't':
+            tests = 1;
+            length = 0;
+            break;
+        default:
+            break;
+    }
     if (tests == 1)
     {
         run_tests();
     }
-    else
+    else if (length == 0){
+        printf("No length specified.");
+    }
+    else if (length > 0)
     {
         char *message = generateMessage();
         printf("Message: %s\n", message);
     }
-
     return 0;
 }
 
@@ -88,16 +90,20 @@ char *generateMessage()
         append(dictionary_as_list, dictionary[i]);
     }
 
+    // Everything above looks just fine
+
+
     // Removes a word from the dictionary arraylist and adds that word to the end of the message array list (subtract 1 because will manually add Half)
-    arraylist_t *message = create_arraylist(length - 1);
+    arraylist_t *message = create_arraylist(length);
     for (int i = 0; i < length - 1; i++)
     {
         char *word = remove_from_index(dictionary_as_list, i % dictionary_as_list->size);
-        add_at_index(message, word, i + 1);
+        add_at_index(message, word, i);
     }
+    destroy(dictionary_as_list);
 
     // Adds the word "half" at the half way point in the list (round down if half is not an integer, +1 is because of line 71 adjustment)
-    add_at_index(message, "Half", (message->size + 1)/ 2);
+    add_at_index(message, "Half", message->size/2);
 
     // Creates the the message as a string to be printed.
     int total_size = 0;
@@ -106,11 +112,14 @@ char *generateMessage()
     for(int i = 0; i < length; i++) {
         // Removes the first word from the list
         char *word = remove_from_index(message, 0);
+        if (word == NULL){
+            break;
+        }
         int word_size = strlen(word);
 
         // Calculates the new size needed for string message for the word to be appended.
-        total_size = strlen(string_message) + 1 + ((i == 0)? word_size : word_size + 1);
-
+        // Author note: Strlen might segfault if tried to strlen a null pointer.
+        total_size = ((string_message == NULL) ? 0 : strlen(string_message)) + 1 + ((i == 0 && i == length - 1) ? word_size : word_size + 1);
         // Reserves the memory space in the heap
         string_message = realloc(string_message, total_size);
         if (string_message == NULL)
@@ -137,11 +146,7 @@ char *generateMessage()
         strcat(string_message, word);
     }
 
-    destroy(dictionary_as_list);
-    free(dictionary_as_list);
     destroy(message);
-    free(message);
-
     return string_message;
 
 }

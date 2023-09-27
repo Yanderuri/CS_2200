@@ -1,6 +1,6 @@
 /**
- * Name: <your name>
- * GTID: <your GTID>
+ * Name: Vy Mai
+ * GTID: 903681630
  */
 
 /*
@@ -93,7 +93,7 @@ int test_remove_from_index()
     // Removes elements systematically from list
     for (int i = 0; i < 100; i += 2)
     {
-
+ 
         int rolling_i = (i % arraylist->size);
 
         char *expected_remove = arraylist->backing_array[rolling_i];

@@ -1,6 +1,6 @@
 /**
- * Name: SAMPLE
- * GTID: 123456789
+ * Name: Vy Mai
+ * GTID: 903681630
  * added to pass autograder
  */
 
@@ -11,6 +11,10 @@
  * @date 2022-02-12
  *
  */
+
+#ifndef MAIN_H
+#define MAIN_H
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,3 +45,5 @@ char *dictionary[] = {
 
 int main(int argc, char *argv[]);
 char *generateMessage();
+
+#endif

@@ -4,6 +4,9 @@
  * Although feel free to add more tests if you'd like!
  */
 
+#ifndef ARRAYLIST_TESTS_H
+#define ARRAYLIST_TESTS_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,3 +22,5 @@ int run_tests();
 int test_append();
 int test_add_at_index();
 int test_remove_from_index();
+
+#endif
