@@ -1,5 +1,5 @@
 {
-  "version": "1.9.1",
+  "version": "1.9.2b",
   "globalBitSize": 32,
   "clockSpeed": 1,
   "circuits": [
@@ -44,7 +44,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
-          "x": 28,
+          "x": 36,
           "y": 60,
           "properties": {
             "Comparison Type": "Unsigned",
@@ -85,7 +85,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 31,
-          "y": 64,
+          "y": 54,
           "properties": {
             "Label": "LdCmp",
             "Direction": "EAST",
@@ -139,8 +139,8 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 106,
-          "y": 47,
+          "x": 107,
+          "y": 45,
           "properties": {
             "Label": "IR[4]",
             "Direction": "WEST",
@@ -205,7 +205,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 119,
+          "x": 123,
           "y": 52,
           "properties": {
             "Label": "regno",
@@ -259,7 +259,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 139,
-          "y": 57,
+          "y": 61,
           "properties": {
             "Label": "INT",
             "Direction": "EAST",
@@ -402,7 +402,7 @@
           "x": 38,
           "y": 29,
           "properties": {
-            "Label location": "EAST",
+            "Label location": "WEST",
             "Label": "PC",
             "Subcircuit": "PC"
           }
@@ -485,7 +485,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 17,
+          "x": 20,
           "y": 52,
           "properties": {
             "Label location": "NORTH",
@@ -498,20 +498,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 104,
-          "y": 55,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Value": "12",
-            "Direction": "EAST",
-            "Bitsize": "4",
-            "Base": "BINARY"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 21,
+          "x": 29,
           "y": 60,
           "properties": {
             "Label location": "NORTH",
@@ -524,7 +511,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
-          "x": 27,
+          "x": 30,
           "y": 48,
           "properties": {
             "Comparison Type": "2\u0027s complement",
@@ -589,6 +576,19 @@
             "Label location": "NORTH",
             "Label": "MAR",
             "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 106,
+          "y": 55,
+          "properties": {
+            "Label location": "WEST",
+            "Label": "$k0",
+            "Value": "12",
+            "Direction": "EAST",
+            "Bitsize": "4",
+            "Base": "BINARY"
           }
         },
         {
@@ -819,7 +819,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 100,
+          "x": 104,
           "y": 60,
           "properties": {
             "Label": "RegSel[1]",
@@ -830,7 +830,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 100,
+          "x": 104,
           "y": 63,
           "properties": {
             "Label": "RegSel[0]",
@@ -873,18 +873,6 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Probe",
-          "x": 12,
-          "y": 64,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Direction": "SOUTH",
-            "Bitsize": "4",
-            "Base": "BINARY"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.Probe",
           "x": 20,
           "y": 5,
           "properties": {
@@ -892,6 +880,18 @@
             "Label": "",
             "Direction": "SOUTH",
             "Bitsize": "32",
+            "Base": "BINARY"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Probe",
+          "x": 27,
+          "y": 64,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "SOUTH",
+            "Bitsize": "4",
             "Base": "BINARY"
           }
         },
@@ -1097,7 +1097,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 139,
-          "y": 59,
+          "y": 63,
           "properties": {
             "Label": "IntACK",
             "Direction": "EAST",
@@ -1141,7 +1141,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.SubcircuitPeer",
           "x": 154,
-          "y": 60,
+          "y": 64,
           "properties": {
             "Label location": "SOUTH",
             "Label": "Timer1",
@@ -1151,7 +1151,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.SubcircuitPeer",
           "x": 175,
-          "y": 60,
+          "y": 64,
           "properties": {
             "Label location": "SOUTH",
             "Label": "Timer2",
@@ -1173,7 +1173,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.plexers.MultiplexerPeer",
-          "x": 112,
+          "x": 116,
           "y": 50,
           "properties": {
             "Selector location": "Right/Down",
@@ -1209,7 +1209,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 139,
-          "y": 63,
+          "y": 67,
           "properties": {
             "Label": "GLOBAL_CLOCK",
             "Direction": "EAST",
@@ -1220,7 +1220,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 160,
-          "y": 63,
+          "y": 67,
           "properties": {
             "Label": "GLOBAL_CLOCK",
             "Direction": "EAST",
@@ -1374,7 +1374,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer",
           "x": 165,
-          "y": 57,
+          "y": 61,
           "properties": {
             "Label location": "NORTH",
             "Label": "",
@@ -1385,7 +1385,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer",
           "x": 186,
-          "y": 57,
+          "y": 61,
           "properties": {
             "Label location": "NORTH",
             "Label": "",
@@ -1421,7 +1421,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.SplitterPeer",
-          "x": 111,
+          "x": 115,
           "y": 60,
           "properties": {
             "Label location": "NORTH",
@@ -1437,12 +1437,6 @@
       ],
       "wires": [
         {
-          "x": 14,
-          "y": 66,
-          "length": 12,
-          "isHorizontal": true
-        },
-        {
           "x": 17,
           "y": 13,
           "length": 7,
@@ -1457,7 +1451,7 @@
         {
           "x": 17,
           "y": 43,
-          "length": 8,
+          "length": 12,
           "isHorizontal": true
         },
         {
@@ -1473,69 +1467,45 @@
           "isHorizontal": true
         },
         {
-          "x": 25,
-          "y": 43,
-          "length": 6,
-          "isHorizontal": false
-        },
-        {
-          "x": 25,
-          "y": 43,
-          "length": 15,
-          "isHorizontal": true
-        },
-        {
-          "x": 25,
-          "y": 49,
-          "length": 2,
-          "isHorizontal": true
-        },
-        {
-          "x": 25,
+          "x": 28,
           "y": 55,
           "length": 1,
           "isHorizontal": true
         },
         {
-          "x": 25,
-          "y": 61,
-          "length": 3,
+          "x": 29,
+          "y": 43,
+          "length": 6,
+          "isHorizontal": false
+        },
+        {
+          "x": 29,
+          "y": 43,
+          "length": 11,
           "isHorizontal": true
         },
         {
-          "x": 26,
+          "x": 29,
+          "y": 49,
+          "length": 1,
+          "isHorizontal": true
+        },
+        {
+          "x": 29,
           "y": 51,
           "length": 1,
           "isHorizontal": true
         },
         {
-          "x": 26,
+          "x": 29,
           "y": 51,
           "length": 4,
           "isHorizontal": false
         },
         {
-          "x": 26,
-          "y": 63,
-          "length": 2,
-          "isHorizontal": true
-        },
-        {
-          "x": 26,
-          "y": 63,
-          "length": 3,
-          "isHorizontal": false
-        },
-        {
-          "x": 26,
+          "x": 29,
           "y": 66,
-          "length": 1,
-          "isHorizontal": false
-        },
-        {
-          "x": 26,
-          "y": 67,
-          "length": 12,
+          "length": 5,
           "isHorizontal": true
         },
         {
@@ -1551,27 +1521,51 @@
           "isHorizontal": true
         },
         {
-          "x": 31,
-          "y": 49,
-          "length": 5,
-          "isHorizontal": true
-        },
-        {
-          "x": 31,
-          "y": 50,
-          "length": 11,
-          "isHorizontal": true
-        },
-        {
           "x": 32,
           "y": 30,
           "length": 6,
           "isHorizontal": true
         },
         {
-          "x": 32,
-          "y": 62,
-          "length": 11,
+          "x": 33,
+          "y": 61,
+          "length": 3,
+          "isHorizontal": true
+        },
+        {
+          "x": 34,
+          "y": 49,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 34,
+          "y": 50,
+          "length": 8,
+          "isHorizontal": true
+        },
+        {
+          "x": 34,
+          "y": 63,
+          "length": 2,
+          "isHorizontal": true
+        },
+        {
+          "x": 34,
+          "y": 63,
+          "length": 3,
+          "isHorizontal": false
+        },
+        {
+          "x": 34,
+          "y": 66,
+          "length": 1,
+          "isHorizontal": false
+        },
+        {
+          "x": 34,
+          "y": 67,
+          "length": 4,
           "isHorizontal": true
         },
         {
@@ -1615,12 +1609,6 @@
           "y": 35,
           "length": 13,
           "isHorizontal": true
-        },
-        {
-          "x": 37,
-          "y": 55,
-          "length": 10,
-          "isHorizontal": false
         },
         {
           "x": 37,
@@ -1685,6 +1673,12 @@
         {
           "x": 41,
           "y": 30,
+          "length": 3,
+          "isHorizontal": true
+        },
+        {
+          "x": 40,
+          "y": 62,
           "length": 3,
           "isHorizontal": true
         },
@@ -1845,14 +1839,14 @@
           "isHorizontal": false
         },
         {
-          "x": 53,
-          "y": 37,
+          "x": 52,
+          "y": 68,
           "length": 1,
           "isHorizontal": true
         },
         {
-          "x": 52,
-          "y": 68,
+          "x": 53,
+          "y": 37,
           "length": 1,
           "isHorizontal": true
         },
@@ -2441,36 +2435,30 @@
         {
           "x": 102,
           "y": 50,
-          "length": 4,
+          "length": 5,
           "isHorizontal": true
         },
         {
           "x": 102,
           "y": 51,
-          "length": 10,
+          "length": 14,
           "isHorizontal": true
         },
         {
           "x": 102,
           "y": 52,
-          "length": 10,
+          "length": 14,
           "isHorizontal": true
         },
         {
           "x": 102,
           "y": 53,
-          "length": 10,
+          "length": 14,
           "isHorizontal": true
         },
         {
           "x": 106,
           "y": 20,
-          "length": 2,
-          "isHorizontal": false
-        },
-        {
-          "x": 106,
-          "y": 48,
           "length": 2,
           "isHorizontal": false
         },
@@ -2481,22 +2469,16 @@
           "isHorizontal": false
         },
         {
+          "x": 107,
+          "y": 46,
+          "length": 4,
+          "isHorizontal": false
+        },
+        {
           "x": 109,
           "y": 21,
           "length": 4,
           "isHorizontal": false
-        },
-        {
-          "x": 108,
-          "y": 54,
-          "length": 2,
-          "isHorizontal": false
-        },
-        {
-          "x": 108,
-          "y": 54,
-          "length": 4,
-          "isHorizontal": true
         },
         {
           "x": 109,
@@ -2512,27 +2494,9 @@
         },
         {
           "x": 110,
-          "y": 61,
-          "length": 1,
-          "isHorizontal": false
-        },
-        {
-          "x": 110,
-          "y": 62,
-          "length": 1,
+          "y": 56,
+          "length": 2,
           "isHorizontal": true
-        },
-        {
-          "x": 110,
-          "y": 63,
-          "length": 1,
-          "isHorizontal": true
-        },
-        {
-          "x": 110,
-          "y": 63,
-          "length": 1,
-          "isHorizontal": false
         },
         {
           "x": 112,
@@ -2541,9 +2505,39 @@
           "isHorizontal": true
         },
         {
-          "x": 113,
-          "y": 56,
+          "x": 112,
+          "y": 54,
+          "length": 2,
+          "isHorizontal": false
+        },
+        {
+          "x": 112,
+          "y": 54,
           "length": 4,
+          "isHorizontal": true
+        },
+        {
+          "x": 114,
+          "y": 61,
+          "length": 1,
+          "isHorizontal": false
+        },
+        {
+          "x": 114,
+          "y": 62,
+          "length": 1,
+          "isHorizontal": true
+        },
+        {
+          "x": 114,
+          "y": 63,
+          "length": 1,
+          "isHorizontal": true
+        },
+        {
+          "x": 114,
+          "y": 63,
+          "length": 1,
           "isHorizontal": false
         },
         {
@@ -2553,16 +2547,16 @@
           "isHorizontal": true
         },
         {
-          "x": 115,
-          "y": 53,
-          "length": 4,
-          "isHorizontal": true
-        },
-        {
           "x": 117,
           "y": 35,
           "length": 1,
           "isHorizontal": true
+        },
+        {
+          "x": 117,
+          "y": 56,
+          "length": 4,
+          "isHorizontal": false
         },
         {
           "x": 118,
@@ -2583,6 +2577,12 @@
           "isHorizontal": true
         },
         {
+          "x": 119,
+          "y": 53,
+          "length": 4,
+          "isHorizontal": true
+        },
+        {
           "x": 124,
           "y": 13,
           "length": 30,
@@ -2596,13 +2596,13 @@
         },
         {
           "x": 144,
-          "y": 58,
+          "y": 62,
           "length": 11,
           "isHorizontal": true
         },
         {
           "x": 146,
-          "y": 60,
+          "y": 64,
           "length": 6,
           "isHorizontal": true
         },
@@ -2620,20 +2620,20 @@
         },
         {
           "x": 151,
-          "y": 62,
+          "y": 66,
           "length": 2,
           "isHorizontal": false
         },
         {
           "x": 151,
-          "y": 62,
+          "y": 66,
           "length": 3,
           "isHorizontal": true
         },
         {
           "x": 152,
           "y": 54,
-          "length": 6,
+          "length": 10,
           "isHorizontal": false
         },
         {
@@ -2644,25 +2644,25 @@
         },
         {
           "x": 152,
-          "y": 60,
+          "y": 64,
           "length": 1,
           "isHorizontal": false
         },
         {
           "x": 152,
-          "y": 61,
+          "y": 65,
           "length": 2,
           "isHorizontal": true
         },
         {
           "x": 155,
-          "y": 58,
+          "y": 62,
           "length": 2,
           "isHorizontal": false
         },
         {
           "x": 155,
-          "y": 58,
+          "y": 62,
           "length": 10,
           "isHorizontal": true
         },
@@ -2681,7 +2681,7 @@
         {
           "x": 156,
           "y": 51,
-          "length": 9,
+          "length": 13,
           "isHorizontal": false
         },
         {
@@ -2692,7 +2692,7 @@
         },
         {
           "x": 157,
-          "y": 61,
+          "y": 65,
           "length": 5,
           "isHorizontal": true
         },
@@ -2705,12 +2705,12 @@
         {
           "x": 162,
           "y": 56,
-          "length": 5,
+          "length": 9,
           "isHorizontal": false
         },
         {
           "x": 162,
-          "y": 61,
+          "y": 65,
           "length": 10,
           "isHorizontal": true
         },
@@ -2735,19 +2735,19 @@
         {
           "x": 166,
           "y": 56,
-          "length": 1,
+          "length": 5,
           "isHorizontal": false
         },
         {
           "x": 167,
-          "y": 58,
+          "y": 62,
           "length": 9,
           "isHorizontal": true
         },
         {
           "x": 172,
           "y": 54,
-          "length": 7,
+          "length": 11,
           "isHorizontal": false
         },
         {
@@ -2758,19 +2758,19 @@
         },
         {
           "x": 172,
-          "y": 61,
+          "y": 65,
           "length": 3,
           "isHorizontal": true
         },
         {
           "x": 172,
-          "y": 62,
+          "y": 66,
           "length": 2,
           "isHorizontal": false
         },
         {
           "x": 172,
-          "y": 62,
+          "y": 66,
           "length": 3,
           "isHorizontal": true
         },
@@ -2787,21 +2787,21 @@
           "isHorizontal": true
         },
         {
+          "x": 177,
+          "y": 28,
+          "length": 4,
+          "isHorizontal": true
+        },
+        {
           "x": 176,
-          "y": 58,
+          "y": 62,
           "length": 2,
           "isHorizontal": false
         },
         {
           "x": 176,
-          "y": 58,
+          "y": 62,
           "length": 10,
-          "isHorizontal": true
-        },
-        {
-          "x": 177,
-          "y": 28,
-          "length": 4,
           "isHorizontal": true
         },
         {
@@ -2819,7 +2819,7 @@
         {
           "x": 177,
           "y": 51,
-          "length": 9,
+          "length": 13,
           "isHorizontal": false
         },
         {
@@ -2836,7 +2836,7 @@
         },
         {
           "x": 178,
-          "y": 61,
+          "y": 65,
           "length": 4,
           "isHorizontal": true
         },
@@ -2861,7 +2861,7 @@
         {
           "x": 182,
           "y": 55,
-          "length": 6,
+          "length": 10,
           "isHorizontal": false
         },
         {
@@ -2927,12 +2927,12 @@
         {
           "x": 187,
           "y": 55,
-          "length": 2,
+          "length": 6,
           "isHorizontal": false
         },
         {
           "x": 188,
-          "y": 58,
+          "y": 62,
           "length": 4,
           "isHorizontal": true
         },
@@ -6050,8 +6050,8 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 54,
-          "y": 69,
+          "x": 53,
+          "y": 66,
           "properties": {
             "Label": "EnInt",
             "Direction": "EAST",
@@ -6222,7 +6222,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 53,
-          "y": 66,
+          "y": 69,
           "properties": {
             "Label": "LdEnInt",
             "Direction": "EAST",
@@ -6911,14 +6911,14 @@
           "isHorizontal": true
         },
         {
-          "x": 60,
-          "y": 70,
-          "length": 2,
+          "x": 59,
+          "y": 67,
+          "length": 3,
           "isHorizontal": true
         },
         {
           "x": 61,
-          "y": 67,
+          "y": 70,
           "length": 1,
           "isHorizontal": true
         },
