@@ -19,6 +19,12 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
         lw $sp, 0($sp)                          ! finish initialization
 
         add $zero, $zero, $zero                 ! TODO FIX ME: Install timer interrupt handler into vector table
+        lea $t0, timer_handler
+        lea $t1, vector0
+        sw $t0, 0($t1)
+
+        lea $t0, distance_tracker_handler
+        sw $t0, 1($t1)
 
 
         add $zero, $zero, $zero                 ! TODO FIX ME: Install distance tracker interrupt handler into vector table
@@ -59,7 +65,7 @@ POW:    addi $sp, $sp, -1                       ! allocate space for old frame p
         beq $zero, $zero, RET1                  ! if the exponent is 0, return 1
 
 BASECHK:blt $a0, $zero, WORK                    ! if the base is 0, return 0
-        beq $zero, $zero, RET0
+        beq $zero, $zero, RET0  
 
 WORK:   addi $a1, $a1, -1                       ! decrement the power
         lea $at, POW                            ! load the address of POW
@@ -93,11 +99,38 @@ AGAIN:  add $v0, $v0, $a0                       ! return value += argument0
         blt $t0, $a1, AGAIN                     ! while sentinel < argument, loop again
         jalr $ra, $zero                         ! return from mult
 
-timer_handler:
-        add $zero, $zero, $zero                 ! TODO FIX ME
+timer_handler:                                  ! TODO FIX ME
+        lea $k0, -1
+        ei                                      
+        addi $sp, $sp, -2                       ! Save current state?
+        sw $t0, 0($sp)
+        sw $t1, 1($sp)
+                                                ! Actual work here
+        lea $t1, ticks
+        lw $t0, 0($t1)
+        addi $t0, $t0, 1
+        sw $t0, 0($t1)
+
+        lw $t0, 0($sp)
+        lw $t1, 1($sp)
+        addi $sp, $sp, 2
+        reti
 
 distance_tracker_handler:
         add $zero, $zero, $zero                 ! TODO FIX ME
+        addi $sp, $sp, -2
+        sw $t0, 0($sp)
+        sw $t1, 1($sp)
+        in $t0, 1                                              ! in instruction is necessary here, what's' the label to target
+        LESS_THAN_MIN:
+        beq $zero, $zero, DIST_TRACKER_TEARDOWN
+        GREATER_THAN_MAX:
+        beq $zero, $zero, DIST_TRACKER_TEARDOWN
+        DIST_TRACKER_TEARDOWN:
+        lw $t0, 0($sp)
+        lw $t1, 1($sp)
+        addi $sp, $sp, 2
+        reti
 
 
 initsp: .fill 0xA000
@@ -105,3 +138,6 @@ ticks:  .fill 0xFFFF
 range:  .fill 0xFFFE
 maxval: .fill 0xFFFD
 minval: .fill 0xFFFC
+
+
+halt
