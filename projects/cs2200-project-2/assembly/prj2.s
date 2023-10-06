@@ -17,8 +17,7 @@ vector0:
 
 main:	lea $sp, initsp                         ! initialize the stack pointer
         lw $sp, 0($sp)                          ! finish initialization
-                                                ! TODO FIX ME: Install timer interrupt handler into vector table
-                                                ! TODO FIX ME: Install distance tracker interrupt handler into vector table
+
         lea $t0, timer_handler
         lea $t1, vector0
         sw $t0, 0($t1)
@@ -58,11 +57,11 @@ POW:    addi $sp, $sp, -1                       ! allocate space for old frame p
 
         addi $fp, $sp, 0                        ! set new frame pointer
 
-        blt $a1, $zero, BASECHK                 ! check if $a1 is zero
+        bgt $a1, $zero, BASECHK                 ! check if $a1 is zero
         beq $zero, $zero, RET1                  ! if the exponent is 0, return 1
 
-BASECHK:blt $a0, $zero, WORK                    ! if the base is 0, return 0
-        beq $zero, $zero, RET0  
+BASECHK:bgt $a0, $zero, WORK                    ! if the base is 0, return 0
+        beq $zero, $zero, RET0
 
 WORK:   addi $a1, $a1, -1                       ! decrement the power
         lea $at, POW                            ! load the address of POW
@@ -80,7 +79,7 @@ WORK:   addi $a1, $a1, -1                       ! decrement the power
         beq $zero, $zero, FIN                   ! unconditional branch to FIN
 
 RET1:   add $v0, $zero, $zero                   ! return a value of 0
-	addi $v0, $v0, 1                        ! increment and return 1
+		addi $v0, $v0, 1                        ! increment and return 1
         beq $zero, $zero, FIN                   ! unconditional branch to FIN
 
 RET0:   add $v0, $zero, $zero                   ! return a value of 0
@@ -103,7 +102,6 @@ timer_handler:                                  ! TODO FIX ME
         addi $sp, $sp, -2                       
         sw $t0, 0($sp)
         sw $t1, 1($sp)
-                                                ! Actual work here
         lea $t1, ticks
         lw $t1, 0($t1)                          ! $t1 = xFFFF
 
@@ -118,56 +116,72 @@ timer_handler:                                  ! TODO FIX ME
         lw $k0, 0($sp)
         addi $sp, $sp, 1
         reti
-
 distance_tracker_handler:
         addi $sp, $sp, -1
-        sw $k0, 0($sp)
+        sw $k0, 0($sp)                           ! save k0        
 
         addi $sp, $sp, -3
         sw $t0, 0($sp)
         sw $t1, 1($sp)
-        sw $t2, 2($sp)
+        sw $t2, 2($sp)                           ! save t0, t1, t2
 
 
         DATA_INPUT:
-        lea $t0, minVal
-        lw $t1, 0($t0)
+        lea $t1, minVal
+        lw $t1, 0($t1)
         lw $t1, 0($t1)
 
-        lea $t0, maxVal
-        lw $t2, 0($t0)
+        lea $t2, maxVal
+        lw $t2, 0($t2)                          
         lw $t2, 0($t2)                          ! $t1 = minVal, $t2 = maxVal
         in $t0, 1                               ! $t0 = distance tracker value
-        blt $t0, $t1, LESS_THAN_MIN
+
+        
         bgt $t0, $t2, GREATER_THAN_MAX
+        blt $t0, $t1, LESS_THAN_MIN
         beq $zero, $zero, DIST_TRACKER_TEARDOWN
         LESS_THAN_MIN:
         lea $t1, minVal
         lw $t1, 0($t1)
         sw $t0, 0($t1)
-        beq $zero, $zero, DATA_INPUT
+        beq $zero, $zero, DIST_TRACKER_TEARDOWN
 
         GREATER_THAN_MAX:
         lea $t2, maxVal
         lw $t2, 0($t2)
         sw $t0, 0($t2)
+        beq $zero, $zero, DIST_TRACKER_TEARDOWN
 
-        beq $zero, $zero, DATA_INPUT
         DIST_TRACKER_TEARDOWN:
+        lea $t0, range
+        lw $t0, 0($t0)                          ! $t0 = range (0xFFFE)
+
+        lea $t1, minVal
+        lw $t1, 0($t1)
+        lw $t1, 0($t1)                          ! $t1 = minVal
+
+        lea $t2, maxVal
+        lw $t2, 0($t2)                          
+        lw $t2, 0($t2)                          ! $t2 = maxVal
+
+        nand $t1, $t1, $t1                      ! $t1 = ~minVal
+        addi $t1, $t1, 1                        ! $t1 = -minVal
+
+        add $t2, $t2, $t1                       ! $t2 = maxVal - minval
+        sw $t2, 0($t0)                          ! store range
+
         lw $t0, 0($sp)
         lw $t1, 1($sp)
         lw $t2, 2($sp)
         addi $sp, $sp, 3
-
+        di
+        lw $k0, 0($sp)
         addi $sp, $sp, 1
         reti
 
-halt                                            ! just in case, halt
 
 initsp: .fill 0xA000
 ticks:  .fill 0xFFFF
 range:  .fill 0xFFFE
 maxval: .fill 0xFFFD
 minval: .fill 0xFFFC
-
-
