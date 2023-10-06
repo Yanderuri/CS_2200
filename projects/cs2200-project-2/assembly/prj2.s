@@ -125,6 +125,7 @@ distance_tracker_handler:
         sw $t1, 1($sp)
         sw $t2, 2($sp)                           ! save t0, t1, t2
 
+        in $t0, 1                                ! $t0 = distance tracker value
 
         DATA_INPUT:
         lea $t1, minVal
@@ -134,23 +135,22 @@ distance_tracker_handler:
         lea $t2, maxVal
         lw $t2, 0($t2)                          
         lw $t2, 0($t2)                          ! $t1 = minVal, $t2 = maxVal
-        in $t0, 1                               ! $t0 = distance tracker value
-
         
         bgt $t0, $t2, GREATER_THAN_MAX
         blt $t0, $t1, LESS_THAN_MIN
         beq $zero, $zero, DIST_TRACKER_TEARDOWN
+        
         LESS_THAN_MIN:
         lea $t1, minVal
         lw $t1, 0($t1)
         sw $t0, 0($t1)
-        beq $zero, $zero, DIST_TRACKER_TEARDOWN
+        beq $zero, $zero, DATA_INPUT
 
         GREATER_THAN_MAX:
         lea $t2, maxVal
         lw $t2, 0($t2)
         sw $t0, 0($t2)
-        beq $zero, $zero, DIST_TRACKER_TEARDOWN
+        beq $zero, $zero, DATA_INPUT
 
         DIST_TRACKER_TEARDOWN:
         lea $t0, range
