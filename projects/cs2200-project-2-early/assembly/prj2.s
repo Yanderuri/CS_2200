@@ -28,8 +28,6 @@ main:	lea $sp, initsp                         ! initialize the stack pointer
 
 
         add $zero, $zero, $zero                 ! TODO FIX ME: Install distance tracker interrupt handler into vector table
-
-
         lea $t0, minval
         lw $t0, 0($t0)
 	lea $t1, INT_MAX 			! store 0x7FFFFFFF into minval (to initialize)
@@ -100,20 +98,27 @@ AGAIN:  add $v0, $v0, $a0                       ! return value += argument0
         jalr $ra, $zero                         ! return from mult
 
 timer_handler:                                  ! TODO FIX ME
-        lea $k0, -1
+        addi $sp, $sp, -1
+        sw $k0, 0($sp)
         ei                                      
-        addi $sp, $sp, -2                       ! Save current state?
+        addi $sp, $sp, -2                       
         sw $t0, 0($sp)
         sw $t1, 1($sp)
                                                 ! Actual work here
         lea $t1, ticks
+        lw $t1, 0($t1)
+
         lw $t0, 0($t1)
         addi $t0, $t0, 1
         sw $t0, 0($t1)
 
+                                                ! timer_handler_teardown:
         lw $t0, 0($sp)
         lw $t1, 1($sp)
         addi $sp, $sp, 2
+        di
+        lw $k0, 0($sp)
+        addi $sp, $sp, 1
         reti
 
 distance_tracker_handler:
