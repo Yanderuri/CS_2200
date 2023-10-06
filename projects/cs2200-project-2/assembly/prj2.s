@@ -79,7 +79,7 @@ WORK:   addi $a1, $a1, -1                       ! decrement the power
         beq $zero, $zero, FIN                   ! unconditional branch to FIN
 
 RET1:   add $v0, $zero, $zero                   ! return a value of 0
-		addi $v0, $v0, 1                        ! increment and return 1
+	addi $v0, $v0, 1                        ! increment and return 1
         beq $zero, $zero, FIN                   ! unconditional branch to FIN
 
 RET0:   add $v0, $zero, $zero                   ! return a value of 0
