@@ -25,6 +25,13 @@ fte_t *frame_table;
  */
 void system_init(void) {
     // TODO: initialize the frame_table pointer.
+    
+    // Clear memory
+    memset(mem, 0, NUM_PAGES * sizeof(fte_t));
+    // Init frame_table to start of memory
+    frame_table = (fte_t *) mem;
+    // set the first fte_t to be protected.
+    (*frame_table).protected = 1;
 }
 
 /**
