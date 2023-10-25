@@ -27,6 +27,18 @@
  */
 void proc_init(pcb_t *proc) {
     // TODO: initialize proc's page table.
+    pfn_t page_table = free_frame();
+    // do we have to clear memory?
+    memset(page_table, 0, PAGE_SIZE);
+    proc -> saved_ptbr = page_table;
+
+    // equivalent to mem + (i * PAGE_SIZE)?
+    fte_t* process_frame = &frame_table[page_table];
+    process_frame -> protected = 1;
+    process_frame -> mapped = 1;
+    process_frame -> referenced = 0;
+    process_frame -> process = proc;
+    process_frame -> vpn = 0;
 }
 
 /**
@@ -48,6 +60,7 @@ void proc_init(pcb_t *proc) {
  */
 void context_switch(pcb_t *proc) {
     // TODO: update any global vars and proc's PCB to match the context_switch.
+    PTBR = proc -> saved_ptbr;
 }
 
 /**

@@ -27,8 +27,9 @@
  */
 void page_fault(vaddr_t addr) {
    // TODO: Get a new frame, then correctly update the page table and frame table
-
-
+   vpn_t vpn = vaddr_vpn(addr);
+   pte_t *page_table = (pte_t *) (mem + current_process->saved_ptbr * PAGE_SIZE + vpn);
+   pfn_t pfn = free_frame();
    if(swap_exists(NULL)){
 
    } else {

@@ -15,6 +15,10 @@ typedef struct ft_entry {
     uint8_t protected;          /* set if the frame holds a page that should be
                                 immune from eviction */
     uint8_t mapped;             /* set if the frame is mapped. */
+    /* the funny bit
+    frame table should not contain referenced
+    broker doesn't care lol
+    */
     uint8_t referenced;         /* set if the entry has been recently accessed. */         
     pcb_t *process;             /* A pointer to the owning process's PCB */
     vpn_t vpn;                  /* The VPN mapped by the process using this frame. */
@@ -32,7 +36,7 @@ typedef struct ptable_entry {
                                 memory */
     pfn_t pfn;                  /* The physical frame number (PFN) this entry
                                 maps to. */
-    swap_id_t sid;          /* The swap entry mapped to this page. Use this
+    swap_id_t sid;              /* The swap entry mapped to this page. Use this
                                 to read to/write from the page to disk using
                                 swap_read() and swap_write() */
 } pte_t;
