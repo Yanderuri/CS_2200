@@ -30,11 +30,10 @@ void proc_init(pcb_t *proc) {
     // trust that it finds a free_frame()
     // or evicted someone
     pfn_t page_table = free_frame();
-    memset(mem + page_table, 0, PAGE_SIZE);
+    memset(mem + page_table * PAGE_SIZE, 0, PAGE_SIZE);
     proc -> saved_ptbr = page_table;
     fte_t* process_frame = frame_table + page_table * PAGE_SIZE;
     // is this needed?
-    // process_frame -> protected = 1;
     process_frame -> protected = 1;
     process_frame -> mapped = 1;
     process_frame -> process = proc;
@@ -79,8 +78,9 @@ void context_switch(pcb_t *proc) {
  */
 void proc_cleanup(pcb_t *proc) {
     // TODO: Iterate the proc's page table and clean up each valid page
+    pte_t * current;
     for (size_t i = 0; i < NUM_PAGES; i++) {
-        pte_t * current = (mem + proc -> saved_ptbr * PAGE_SIZE) + i;
+        current = (pte_t*) (mem + proc -> saved_ptbr * PAGE_SIZE) + i;
         if (current -> valid == 1){
             current -> valid = 0;
             frame_table[current -> pfn].mapped = 0;
@@ -89,6 +89,7 @@ void proc_cleanup(pcb_t *proc) {
             swap_free(current);
         }
     }
+    current = NULL;
     fte_t * oldFrameEntry = frame_table + proc -> saved_ptbr;
     oldFrameEntry -> protected = 0;
     oldFrameEntry -> mapped = 0;

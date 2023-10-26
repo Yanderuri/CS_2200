@@ -31,8 +31,16 @@ pfn_t free_frame(void) {
     victim_pfn = select_victim_frame();
 
     // TODO: evict any mapped pages.
+    // this might not work, replace later.
+    fte_t * evicted_frame = &frame_table[victim_pfn];
     if (frame_table[victim_pfn].mapped) {
+        pte_t * evicted = mem + evicted_frame -> process -> saved_ptbr * PAGE_SIZE + evicted_frame -> vpn;
 
+        if (evicted -> dirty == 1){
+            swap_write(evicted, evicted_frame);
+        }
+        evicted_frame -> mapped = 0;
+        evicted -> valid = 0;
     }
 
     return victim_pfn;
@@ -85,7 +93,7 @@ pfn_t select_victim_frame() {
     } else if (replacement == FIFO) {
         // TODO: Implement the FIFO algorithm here
         for (pfn_t i = 0; i < num_entries; i++){
-            if (!frame_table[i % num_entries].protected){
+            if (!frame_table[i].protected){
                 return i;
             }
         }
@@ -96,15 +104,15 @@ pfn_t select_victim_frame() {
         pfn_t i = 0;
         for (i = 0; i < num_entries; i++){
             if (!frame_table[i % num_entries].protected){
-                if (frame_table[i % num_entries].referenced == 0){
+                if (frame_table[i].referenced == 0){
                     return i;
                 }
                 else{
-                    frame_table[i % num_entries].referenced = 0;
+                    frame_table[i].referenced = 0;
                 }
             }
         }
-        return i % num_entries;
+        return i;
     }
 
     /* If every frame is protected, give up. This should never happen

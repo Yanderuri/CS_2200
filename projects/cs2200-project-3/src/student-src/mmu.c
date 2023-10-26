@@ -60,18 +60,16 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     vpn_t vpn = vaddr_vpn(addr);
     uint16_t offset = vaddr_offset(addr);
     // Get the page table entry from the process's page table
-    pte_t *page_table = (pte_t *) (mem + current_process->saved_ptbr * PAGE_SIZE + vpn);
+    pte_t *page_table = (pte_t *) (mem + PTBR * PAGE_SIZE + vpn);
     // Page fault if needed
     if (page_table -> valid == 0){
         page_fault(addr);
     }
     // PFN from VPN
     pfn_t pfn = page_table -> pfn;
-    paddr_t phys_addr = (pfn) | offset;
-
-    // Set referenced bits to 1
-    // Does this work?
     frame_table[pfn].referenced = 1;
+    paddr_t phys_addr = (pfn << OFFSET_LEN) | offset;
+
     stats.accesses++;
     if (access == 'r') {
         return mem[phys_addr];
