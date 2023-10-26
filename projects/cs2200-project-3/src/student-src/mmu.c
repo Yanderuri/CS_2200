@@ -25,11 +25,13 @@ fte_t *frame_table;
  */
 void system_init(void) {
     // Clear memory
+    // First page belongs to frame table
+    // One page worth of space?
     memset(mem, 0, PAGE_SIZE);
     // Init frame_table to start of memory
     frame_table = (fte_t *) mem;
     // set the first fte_t to be protected.
-    (*frame_table).protected = 1;
+    frame_table -> protected = 1;
 }
 
 /**
@@ -57,21 +59,20 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     // Get the VPN and offset from the virtual address
     vpn_t vpn = vaddr_vpn(addr);
     uint16_t offset = vaddr_offset(addr);
-
     // Get the page table entry from the process's page table
     pte_t *page_table = (pte_t *) (mem + current_process->saved_ptbr * PAGE_SIZE + vpn);
-
     // Page fault if needed
     if (page_table -> valid == 0){
         page_fault(addr);
     }
-
     // PFN from VPN
     pfn_t pfn = page_table -> pfn;
     paddr_t phys_addr = (pfn) | offset;
-    // Set referenced bits to 1
-    frame_table[pfn].referenced = 1;
 
+    // Set referenced bits to 1
+    // Does this work?
+    frame_table[pfn].referenced = 1;
+    stats.accesses++;
     if (access == 'r') {
         return mem[phys_addr];
     } else {
@@ -79,6 +80,4 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
         page_table -> dirty = 1;
         return 0;
     }
-
-    return 0;
 }

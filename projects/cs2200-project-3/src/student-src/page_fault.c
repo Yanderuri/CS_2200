@@ -28,13 +28,28 @@
 void page_fault(vaddr_t addr) {
    // TODO: Get a new frame, then correctly update the page table and frame table
    vpn_t vpn = vaddr_vpn(addr);
-   pte_t *page_table = (pte_t *) (mem + current_process->saved_ptbr * PAGE_SIZE + vpn);
+   // we're trusting it will evict or find us a new one.
    pfn_t pfn = free_frame();
-   if(swap_exists(NULL)){
 
+   pte_t *entry = (pte_t *) (mem + current_process->saved_ptbr * PAGE_SIZE + vpn);
+   entry->pfn = pfn;
+   entry->valid = 1;
+   entry->dirty = 0;
+
+   fte_t * frame_entry = frame_table + pfn;
+   frame_entry -> mapped = 1;
+   frame_entry -> referenced = 1;
+   frame_entry -> process = current_process;
+   frame_entry -> vpn = vpn;
+
+
+   uint16_t faulting_page = mem + pfn * PAGE_SIZE;
+   if(swap_exists(entry)){
+      swap_read(entry, faulting_page);
    } else {
-
+      memset(faulting_page, 0, PAGE_SIZE);
    }
+   stats.page_faults++;
 }
 
 #pragma GCC diagnostic pop

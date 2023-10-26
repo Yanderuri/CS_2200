@@ -82,14 +82,29 @@ pfn_t select_victim_frame() {
         if (unprotected_found < NUM_FRAMES) {
             return unprotected_found;
         }
-
-
     } else if (replacement == FIFO) {
         // TODO: Implement the FIFO algorithm here
-
+        for (pfn_t i = 0; i < num_entries; i++){
+            if (!frame_table[i % num_entries].protected){
+                return i;
+            }
+        }
+        // will we ever encounter a scenario where all frames are protected?
+        // nvm like 12 lines down it doesn't happen.
     } else if (replacement == CLOCKSWEEP) {
         // TODO: Implement the clocksweep page replacement algorithm here 
-
+        pfn_t i = 0;
+        for (i = 0; i < num_entries; i++){
+            if (!frame_table[i % num_entries].protected){
+                if (frame_table[i % num_entries].referenced == 0){
+                    return i;
+                }
+                else{
+                    frame_table[i % num_entries].referenced = 0;
+                }
+            }
+        }
+        return i % num_entries;
     }
 
     /* If every frame is protected, give up. This should never happen
