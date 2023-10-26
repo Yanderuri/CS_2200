@@ -76,6 +76,7 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     } else {
         mem[phys_addr] = data;
         page_table -> dirty = 1;
+        stats.writebacks++;
         return 0;
     }
 }
