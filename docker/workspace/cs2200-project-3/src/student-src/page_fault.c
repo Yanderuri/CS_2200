@@ -44,7 +44,7 @@ void page_fault(vaddr_t addr) {
    frame_entry -> vpn = vpn;
 
 
-   uint16_t * faulting_page = mem + pfn * PAGE_SIZE;
+   uint8_t * faulting_page = mem + pfn * PAGE_SIZE;
    if(swap_exists(entry)){
       swap_read(entry, faulting_page);
    } else {
