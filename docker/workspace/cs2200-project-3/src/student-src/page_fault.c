@@ -31,24 +31,24 @@ void page_fault(vaddr_t addr) {
    // we're trusting it will evict or find us a new one.
    pfn_t pfn = free_frame();
 
-   pte_t *entry = (pte_t *) (mem + PTBR * PAGE_SIZE + vpn);
+   pte_t *entry = (pte_t *) (mem + PTBR * PAGE_SIZE) + vpn;
    entry->pfn = pfn;
    entry->valid = 1;
    entry->dirty = 0;
 
    fte_t * frame_entry = frame_table + pfn;
-   frame_entry -> protected = 1;
+   frame_entry -> protected = 0;
    frame_entry -> mapped = 1;
    frame_entry -> referenced = 1;
    frame_entry -> process = current_process;
    frame_entry -> vpn = vpn;
 
 
-   uint8_t * faulting_page = mem + pfn * PAGE_SIZE;
+   uint8_t * swap_location = mem + pfn * PAGE_SIZE;
    if(swap_exists(entry)){
-      swap_read(entry, faulting_page);
+      swap_read(entry, swap_location);
    } else {
-      memset(faulting_page, 0, PAGE_SIZE);
+      memset(swap_location, 0, PAGE_SIZE);
    }
    stats.page_faults++;
 }

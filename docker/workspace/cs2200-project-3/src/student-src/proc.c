@@ -30,15 +30,14 @@ void proc_init(pcb_t *proc) {
     // trust that it finds a free_frame()
     // or evicted someone
     pfn_t page_table = free_frame();
+
     memset(mem + page_table * PAGE_SIZE, 0, PAGE_SIZE);
+
     proc -> saved_ptbr = page_table;
-    fte_t* process_frame = frame_table + page_table * PAGE_SIZE;
-    // is this needed?
+    fte_t* process_frame = frame_table + page_table;
     process_frame -> protected = 1;
     process_frame -> mapped = 1;
     process_frame -> process = proc;
-    process_frame -> referenced = 0;
-    process_frame -> vpn = 0;
 }
 
 /**
@@ -82,8 +81,8 @@ void proc_cleanup(pcb_t *proc) {
     for (size_t i = 0; i < NUM_PAGES; i++) {
         current = (pte_t*) (mem + proc -> saved_ptbr * PAGE_SIZE) + i;
         if (current -> valid == 1){
-            current -> valid = 0;
             frame_table[current -> pfn].mapped = 0;
+            current -> valid = 0;
         }
         if (swap_exists(current)){
             swap_free(current);

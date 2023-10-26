@@ -58,9 +58,9 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
 
     // Get the VPN and offset from the virtual address
     vpn_t vpn = vaddr_vpn(addr);
-    uint16_t offset = vaddr_offset(addr);
+    uint16_t offset = vaddr_offset(addr);   
     // Get the page table entry from the process's page table
-    pte_t *page_table = (pte_t *) (mem + PTBR * PAGE_SIZE + vpn);
+    pte_t *page_table = (pte_t *) (mem + PTBR * PAGE_SIZE) +  vpn;
     // Page fault if needed
     if (page_table -> valid == 0){
         page_fault(addr);
