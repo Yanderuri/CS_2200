@@ -27,8 +27,9 @@ pfn_t last_evicted = 0;
  * ----------------------------------------------------------------------------------
  */
 pfn_t free_frame(void) {
-    pfn_t victim_pfn;
-    victim_pfn = select_victim_frame();
+    pfn_t victim_pfn = select_victim_frame();
+
+    last_evicted = victim_pfn;
 
     // TODO: evict any mapped pages.
     // this might not work, replace later.
@@ -77,6 +78,7 @@ pfn_t select_victim_frame() {
     // RANDOM implemented for you.
     if (replacement == RANDOM) {
         /* Play Russian Roulette to decide which frame to evict */
+        /* Play Russian Roulette to decide which frame to evict */
         pfn_t unprotected_found = NUM_FRAMES;
         for (pfn_t i = 0; i < num_entries; i++) {
             if (!frame_table[i].protected) {
@@ -93,27 +95,34 @@ pfn_t select_victim_frame() {
         }
     } else if (replacement == FIFO) {
         // TODO: Implement the FIFO algorithm here
-        for (pfn_t i = 0; i < num_entries; i++){
-            if (!frame_table[i].protected){
+        // for (pfn_t i = last_evicted; i < num_entries; i++){
+        //     if (!frame_table[i % num_entries].protected){
+        //         return i;
+        //     }
+        // }
+        for (pfn_t i = last_evicted; i < num_entries; i++) {
+            if (!frame_table[i].protected) {
+                last_evicted = (i != NUM_FRAMES - 1) * (i + 1);
                 return i;
             }
+            if (i == NUM_FRAMES - 1){
+                i = 0;
+            }
         }
-        // will we ever encounter a scenario where all frames are protected?
-        // nvm like 12 lines down it doesn't happen.
     } else if (replacement == CLOCKSWEEP) {
         // TODO: Implement the clocksweep page replacement algorithm here 
         pfn_t i = 0;
-        for (i = 0; i < num_entries; i++){
+        for (i = last_evicted; i < num_entries; i++){
             if (!frame_table[i % num_entries].protected){
-                if (frame_table[i].referenced == 0){
-                    return i;
+                if (frame_table[i % num_entries].referenced == 0){
+                    return i % num_entries;
                 }
                 else{
-                    frame_table[i].referenced = 0;
+                    frame_table[i % num_entries].referenced = 0;
                 }
             }
         }
-        return i;
+        return i % num_entries;
     }
 
     /* If every frame is protected, give up. This should never happen

@@ -18,12 +18,12 @@
  */
 static inline vpn_t vaddr_vpn(vaddr_t addr) {
     // TODO: return the VPN from virtual address addr.
-    return addr >> OFFSET_LEN;
+    return (uint16_t) addr >> OFFSET_LEN;
 }
 
 static inline uint16_t vaddr_offset(vaddr_t addr) {
     // TODO: return the offset into the frame from virtual address addr.
-    return addr & (PAGE_SIZE - 1);
+    return (uint16_t) addr & ((1 << 14) - 1);
 }
 
 #pragma GCC diagnostic pop
