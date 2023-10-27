@@ -26,12 +26,11 @@ fte_t *frame_table;
 void system_init(void) {
     // Clear memory
     // First page belongs to frame table
-    // One page worth of space?
     memset(mem, 0, PAGE_SIZE);
     // Init frame_table to start of memory
-    frame_table = (fte_t *) mem;
+    frame_table = (fte_t*) mem;
     // set the first fte_t to be protected.
-    frame_table -> protected = 1;
+    (*frame_table).protected = 1;
 }
 
 /**
@@ -76,7 +75,6 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     } else {
         mem[phys_addr] = data;
         page_table -> dirty = 1;
-        stats.writebacks++;
         return 0;
     }
 }

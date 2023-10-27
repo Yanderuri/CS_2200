@@ -28,23 +28,19 @@ pfn_t last_evicted = 0;
  */
 pfn_t free_frame(void) {
     pfn_t victim_pfn = select_victim_frame();
-
     last_evicted = victim_pfn;
-
     // TODO: evict any mapped pages.
-    // this might not work, replace later.
-    fte_t * evicted_frame = &frame_table[victim_pfn];
     if (frame_table[victim_pfn].mapped) {
-        pte_t * evicted = (pte_t *) (mem + evicted_frame -> process -> saved_ptbr * PAGE_SIZE) + evicted_frame -> vpn;
+        pte_t * evicted = (pte_t *) (mem + frame_table[victim_pfn].process->saved_ptbr * PAGE_SIZE) + frame_table[victim_pfn].vpn;
 
         if (evicted -> dirty == 1){
-            swap_write(evicted, evicted_frame);
+            swap_write(evicted, mem + (victim_pfn * PAGE_SIZE));
+            stats.writebacks++;
             evicted -> dirty = 0;
         }
-        evicted_frame -> mapped = 0;
+        frame_table[victim_pfn].mapped = 0;
         evicted -> valid = 0;
     }
-
     return victim_pfn;
 }
 
@@ -77,7 +73,6 @@ pfn_t select_victim_frame() {
 
     // RANDOM implemented for you.
     if (replacement == RANDOM) {
-        /* Play Russian Roulette to decide which frame to evict */
         /* Play Russian Roulette to decide which frame to evict */
         pfn_t unprotected_found = NUM_FRAMES;
         for (pfn_t i = 0; i < num_entries; i++) {
