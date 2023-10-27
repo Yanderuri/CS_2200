@@ -27,12 +27,19 @@ pfn_t last_evicted = 0;
  * ----------------------------------------------------------------------------------
  */
 pfn_t free_frame(void) {
-    pfn_t victim_pfn;
-    victim_pfn = select_victim_frame();
-
+    pfn_t victim_pfn = select_victim_frame();
+    last_evicted = victim_pfn;
     // TODO: evict any mapped pages.
     if (frame_table[victim_pfn].mapped) {
+        pte_t* page_table_entry = (pte_t*) (mem + (frame_table[victim_pfn].process->saved_ptbr * PAGE_SIZE)) + frame_table[victim_pfn].vpn;
 
+        if (page_table_entry -> dirty){
+            stats.writebacks++;
+            swap_write(page_table_entry, mem + (victim_pfn * PAGE_SIZE));
+            page_table_entry -> dirty = 0;
+        }
+        frame_table[victim_pfn].mapped = 0;    
+        page_table_entry->valid = 0;
     }
 
     return victim_pfn;
