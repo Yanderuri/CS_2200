@@ -8,6 +8,7 @@
 pfn_t select_victim_frame(void);
 
 pfn_t last_evicted = 0;
+volatile static pfn_t fifo_counter = 1;
 
 /**
  * --------------------------------- PROBLEM 7 --------------------------------------
@@ -28,20 +29,16 @@ pfn_t last_evicted = 0;
  */
 pfn_t free_frame(void) {
     pfn_t victim_pfn = select_victim_frame();
-    last_evicted = victim_pfn;
-    // TODO: evict any mapped pages.
     if (frame_table[victim_pfn].mapped) {
-        pte_t* page_table_entry = (pte_t*) (mem + (frame_table[victim_pfn].process->saved_ptbr * PAGE_SIZE)) + frame_table[victim_pfn].vpn;
-
-        if (page_table_entry -> dirty){
+        pte_t* specific_page_table = (pte_t*) (mem + (frame_table[victim_pfn].process->saved_ptbr * PAGE_SIZE)) + frame_table[victim_pfn].vpn;
+        if (specific_page_table->dirty == 1) {
+            swap_write(specific_page_table, mem + (victim_pfn * PAGE_SIZE));
+            specific_page_table->dirty = 0;
             stats.writebacks++;
-            swap_write(page_table_entry, mem + (victim_pfn * PAGE_SIZE));
-            page_table_entry -> dirty = 0;
         }
-        frame_table[victim_pfn].mapped = 0;    
-        page_table_entry->valid = 0;
+        frame_table[victim_pfn].mapped = 0;
+        specific_page_table->valid = 0;
     }
-
     return victim_pfn;
 }
 
@@ -71,7 +68,6 @@ pfn_t select_victim_frame() {
             return i;
         }
     }
-
     // RANDOM implemented for you.
     if (replacement == RANDOM) {
         /* Play Russian Roulette to decide which frame to evict */
@@ -89,14 +85,30 @@ pfn_t select_victim_frame() {
         if (unprotected_found < NUM_FRAMES) {
             return unprotected_found;
         }
-
-
     } else if (replacement == FIFO) {
-        // TODO: Implement the FIFO algorithm here
-
+        for (pfn_t i = fifo_counter; i < num_entries; i++) {
+            if (frame_table[i].protected == 0) {
+                fifo_counter = (i + 1) % NUM_FRAMES;
+                return i;
+            }
+            if (i + 1 == NUM_FRAMES) {
+                i = 1;
+            }
+        }
     } else if (replacement == CLOCKSWEEP) {
-        // TODO: Implement the clocksweep page replacement algorithm here 
-
+        for (pfn_t i = fifo_counter; i < num_entries; i++) {
+            if (frame_table[i].protected == 0) {
+                if (frame_table[i].referenced == 0) {
+                    fifo_counter = (i + 1) % NUM_FRAMES;
+                    return i;
+                } else {
+                    frame_table[i].referenced = 0;
+                }
+            }
+            if (i + 1 == NUM_FRAMES) {
+                i = 1;
+            }
+        }
     }
 
     /* If every frame is protected, give up. This should never happen

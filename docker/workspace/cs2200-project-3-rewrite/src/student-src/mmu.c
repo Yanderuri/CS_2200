@@ -3,7 +3,6 @@
 #include "va_splitting.h"
 #include "swapops.h"
 #include "stats.h"
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -24,9 +23,8 @@ fte_t *frame_table;
  * ----------------------------------------------------------------------------------
  */
 void system_init(void) {
-    // TODO: initialize the frame_table pointer.
-    frame_table = (fte_t *) mem;
-    memset(frame_table, 0, PAGE_SIZE);
+    frame_table = (fte_t*) mem;
+    memset(mem, 0, PAGE_SIZE);
     (*frame_table).protected = 1;
 }
 
@@ -47,26 +45,20 @@ void system_init(void) {
  * ----------------------------------------------------------------------------------
  */
 uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
-    // TODO: translate virtual address to physical, then perform the specified operation
-
-    vpn_t vpn = vaddr_vpn(addr);
     uint16_t offset = vaddr_offset(addr);
-
-    // adding vpn or vpn * sizeof(pte_t)
-    pte_t * page_table_entry = (pte_t*) mem + (PTBR * PAGE_SIZE) + (vpn * sizeof(pte_t));
-    if (page_table_entry -> valid){
+    pte_t* pte_access = (pte_t*) (mem + (PTBR * PAGE_SIZE)) + vaddr_vpn(addr);
+    if (pte_access->valid == 0) {
         page_fault(addr);
     }
-    /* Either read or write the data to the physical address
-       depending on 'rw' */
-    frame_table[page_table_entry -> pfn].referenced = 1;
-    paddr_t phys_addr = (page_table_entry -> pfn * PAGE_SIZE) + offset;
-    stats.accesses += 1;
+    frame_table[pte_access->pfn].referenced = 1;
+    paddr_t phys_addr = (paddr_t) (pte_access->pfn << OFFSET_LEN) | offset;
+
+    stats.accesses++;
     if (access == 'r') {
         return mem[phys_addr];
-    } else {       
-        page_table_entry->dirty = 1;
+    } else {
+        pte_access->dirty = 1;
         mem[phys_addr] = data;
-        return 0;
+        return data;
     }
 }

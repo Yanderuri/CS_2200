@@ -23,6 +23,8 @@ static inline vpn_t vaddr_vpn(vaddr_t addr) {
 
 static inline uint16_t vaddr_offset(vaddr_t addr) {
     // TODO: return the offset into the frame from virtual address addr.
+    // Mod addr by page size
+    //return addr & 32767;
     return addr % PAGE_SIZE;
 }
 

@@ -28,12 +28,11 @@
 void proc_init(pcb_t *proc) {
     pfn_t page_table = free_frame();
     memset(mem + page_table * PAGE_SIZE, 0, PAGE_SIZE);
+    fte_t* process_frame_table_entry = (frame_table + page_table);
+    process_frame_table_entry->protected = 1;
+    process_frame_table_entry->mapped = 1;
+    process_frame_table_entry->process = proc;
     proc->saved_ptbr = page_table;
-
-    fte_t* frame_table_entry = (fte_t *) (frame_table + page_table);
-    frame_table_entry->protected = 1;
-    frame_table_entry->mapped = 1;
-    frame_table_entry->process = proc;
 }
 
 /**
@@ -54,7 +53,8 @@ void proc_init(pcb_t *proc) {
  * ----------------------------------------------------------------------------------
  */
 void context_switch(pcb_t *proc) {
-    PTBR = proc -> saved_ptbr;
+    // Switch PCB
+    PTBR = proc->saved_ptbr;
 }
 
 /**
@@ -72,20 +72,19 @@ void context_switch(pcb_t *proc) {
  */
 void proc_cleanup(pcb_t *proc) {
     // TODO: Iterate the proc's page table and clean up each valid page
-    for (size_t i = 0; i < NUM_PAGES; i++){
-        pte_t* page_table_entry = (pte_t*) (mem + (proc->saved_ptbr * PAGE_SIZE)) + i;
-        if (page_table_entry -> valid){
-            if (page_table_entry -> dirty == 1){
-                stats.writebacks++;
-                swap_write(page_table_entry, mem + (i * PAGE_SIZE));
-                page_table_entry -> dirty = 0;
-            }
-            if (swap_exists(page_table_entry)){
-                swap_free(page_table_entry);
-            }
-            page_table_entry -> valid = 0;
-        }      
+    for (size_t i = 0; i < NUM_PAGES; i++) {
+        pte_t* page_table_entry = (pte_t *) (mem + (proc->saved_ptbr) * PAGE_SIZE) + i;
+        if (page_table_entry->valid == 1) {
+            page_table_entry->valid = 0;
+            frame_table[page_table_entry->pfn].mapped = 0;
+        }
+        if (swap_exists(page_table_entry)) {
+            swap_free(page_table_entry);
+        }
     }
+    fte_t* current_frame_table = frame_table + proc->saved_ptbr;
+    current_frame_table->mapped = 0;
+    current_frame_table->protected = 0;
 }
 
 #pragma GCC diagnostic pop

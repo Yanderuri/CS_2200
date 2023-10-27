@@ -26,31 +26,28 @@
  * ----------------------------------------------------------------------------------
  */
 void page_fault(vaddr_t addr) {
-   // TODO: Get a new frame, then correctly update the page table and frame table
    pfn_t pfn = free_frame();
    vpn_t vpn = vaddr_vpn(addr);
-
-   // where page table entry that faulted
-   pte_t * page_table_entry = (pte_t*) mem + (PTBR * PAGE_SIZE) + (vpn * sizeof(pte_t));
-   uint8_t* hold = (mem + (pfn * PAGE_SIZE));
+   pte_t* page_table_entry = (pte_t*) (mem + (PTBR * PAGE_SIZE)) + vpn;
+   uint8_t* location = (mem + (pfn * PAGE_SIZE));
    if(swap_exists(page_table_entry)){
-      swap_read(page_table_entry, hold);
+      swap_read(page_table_entry, location);
    } else {
-      memset(hold, 0, PAGE_SIZE);
-   }
+      memset(location, 0, PAGE_SIZE);
+   }   
 
-   stats.page_faults += 1;
+   page_table_entry->pfn = pfn;
+   page_table_entry->valid = 1;
+   page_table_entry->dirty = 0;
    
-   page_table_entry -> pfn = pfn;
-   page_table_entry -> valid = 1;
-   page_table_entry -> dirty = 0;
-
    fte_t* frame_table_entry = frame_table + pfn;
    frame_table_entry->referenced = 1;
    frame_table_entry->protected = 0;
    frame_table_entry->process = current_process;
    frame_table_entry->mapped = 1;
    frame_table_entry->vpn = vpn;
+
+   stats.page_faults++;
 }
 
 #pragma GCC diagnostic pop
