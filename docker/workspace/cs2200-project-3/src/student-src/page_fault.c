@@ -29,7 +29,7 @@ void page_fault(vaddr_t addr) {
    // TODO: Get a new frame, then correctly update the page table and frame table
    vpn_t vpn = vaddr_vpn(addr);
    pfn_t pfn = free_frame();
-   pte_t *entry = (pte_t *) (mem + PTBR * PAGE_SIZE) + vpn;
+   pte_t *entry = ((pte_t *) (mem + (PTBR * PAGE_SIZE))) + vpn;
    uint8_t * swap_location = mem + pfn * PAGE_SIZE;
    if(swap_exists(entry)){
       swap_read(entry, swap_location);
@@ -41,7 +41,7 @@ void page_fault(vaddr_t addr) {
    entry->valid = 1;
    entry->dirty = 0;
 
-   fte_t * frame_entry = frame_table + pfn;
+   fte_t * frame_entry = (fte_t *) frame_table + pfn;
    frame_entry -> protected = 0;
    frame_entry -> mapped = 1;
    frame_entry -> referenced = 1;

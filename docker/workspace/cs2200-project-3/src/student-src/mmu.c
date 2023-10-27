@@ -11,7 +11,7 @@
 fte_t *frame_table;
 
 /**
- * --------------------------------- PROBLEM 2 --------------------------------------
+ * --------------------------------- PROBLEM 2: DONE--------------------------------------
  * Checkout PDF sections 4 for this problem
  * 
  * In this problem, you will initialize the frame_table pointer. The frame table will
@@ -25,10 +25,10 @@ fte_t *frame_table;
  */
 void system_init(void) {
     // Clear memory
-    // First page belongs to frame table
-    memset(mem, 0, PAGE_SIZE);
     // Init frame_table to start of memory
     frame_table = (fte_t*) mem;
+    // First page belongs to frame table
+    memset(mem, 0, PAGE_SIZE);
     // set the first fte_t to be protected.
     (*frame_table).protected = 1;
 }
@@ -59,13 +59,13 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     vpn_t vpn = vaddr_vpn(addr);
     uint16_t offset = vaddr_offset(addr);   
     // Get the page table entry from the process's page table
-    pte_t *page_table = (pte_t *) (mem + PTBR * PAGE_SIZE) +  vpn;
+    pte_t *page_table_entry = ((pte_t *) (mem + (PTBR * PAGE_SIZE))) + vpn;
     // Page fault if needed
-    if (page_table -> valid == 0){
+    if (page_table_entry -> valid == 0){
         page_fault(addr);
     }
     // PFN from VPN
-    pfn_t pfn = page_table -> pfn;
+    pfn_t pfn = page_table_entry -> pfn;
     frame_table[pfn].referenced = 1;
     paddr_t phys_addr = (pfn << OFFSET_LEN) | offset;
 
@@ -74,7 +74,7 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
         return mem[phys_addr];
     } else {
         mem[phys_addr] = data;
-        page_table -> dirty = 1;
+        page_table_entry -> dirty = 1;
         return 0;
     }
 }

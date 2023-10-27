@@ -26,17 +26,13 @@
  * ----------------------------------------------------------------------------------
  */
 void proc_init(pcb_t *proc) {
-    // TODO: initialize proc's page table.
-    // trust that it finds a free_frame()
-    // or evicted someone
-    pfn_t page_table = free_frame();
-    memset(mem + page_table * PAGE_SIZE, 0, PAGE_SIZE);
-    fte_t* process_frame = frame_table + page_table;
-    process_frame -> protected = 1;
-    process_frame -> mapped = 1;
-    process_frame -> process = proc;
-
-    proc -> saved_ptbr = page_table;
+    pfn_t page_table_loc = free_frame();
+    memset(mem + page_table_loc * PAGE_SIZE, 0, PAGE_SIZE);
+    fte_t* process_frame_table_entry = (fte_t *) frame_table + page_table_loc;
+    process_frame_table_entry -> protected = 1;
+    process_frame_table_entry -> mapped = 1;
+    process_frame_table_entry -> process = proc;
+    proc -> saved_ptbr = page_table_loc;
 }
 
 /**
@@ -57,7 +53,6 @@ void proc_init(pcb_t *proc) {
  * ----------------------------------------------------------------------------------
  */
 void context_switch(pcb_t *proc) {
-    // TODO: update any global vars and proc's PCB to match the context_switch.
     PTBR = proc -> saved_ptbr;
 }
 
@@ -77,17 +72,17 @@ void context_switch(pcb_t *proc) {
 void proc_cleanup(pcb_t *proc) {
     // TODO: Iterate the proc's page table and clean up each valid page
     pte_t * current;
+    pte_t * base = ((pte_t*) (mem + (proc -> saved_ptbr * PAGE_SIZE)));
     for (size_t i = 0; i < NUM_PAGES; i++) {
-        current = (pte_t*) (mem + (proc -> saved_ptbr * PAGE_SIZE)) + i;
+        current = ((pte_t*) base)+ i;
         if (swap_exists(current)){
             swap_free(current);
         }
         if (current -> valid == 1){
-            frame_table[current -> pfn].mapped = 0;
             current -> valid = 0;
+            frame_table[current -> pfn].mapped = 0;
         }
     }
-    current = NULL;
     fte_t * oldFrameEntry = frame_table + proc -> saved_ptbr;
     oldFrameEntry -> protected = 0;
     oldFrameEntry -> mapped = 0;

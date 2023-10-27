@@ -6,7 +6,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
 /**
- * --------------------------------- PROBLEM 1 --------------------------------------
+ * --------------------------------- PROBLEM 1: DONE--------------------------------------
  * Checkout PDF Section 3 For this Problem
  *
  * Split the virtual address into its virtual page number and offset.
@@ -23,7 +23,7 @@ static inline vpn_t vaddr_vpn(vaddr_t addr) {
 
 static inline uint16_t vaddr_offset(vaddr_t addr) {
     // TODO: return the offset into the frame from virtual address addr.
-    return (uint16_t) addr & ((1 << 14) - 1);
+    return (uint16_t) addr % PAGE_SIZE;
 }
 
 #pragma GCC diagnostic pop
