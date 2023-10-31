@@ -59,6 +59,6 @@ uint8_t mem_access(vaddr_t addr, char access, uint8_t data) {
     } else {
         pte_access->dirty = 1;
         mem[phys_addr] = data;
-        return data;
+        return 0;
     }
 }

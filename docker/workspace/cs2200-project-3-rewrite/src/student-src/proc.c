@@ -28,7 +28,7 @@
 void proc_init(pcb_t *proc) {
     pfn_t page_table = free_frame();
     memset(mem + page_table * PAGE_SIZE, 0, PAGE_SIZE);
-    fte_t* process_frame_table_entry = (frame_table + page_table);
+    fte_t* process_frame_table_entry = ((fte_t*) mem) + page_table;
     process_frame_table_entry->protected = 1;
     process_frame_table_entry->mapped = 1;
     process_frame_table_entry->process = proc;
@@ -82,7 +82,7 @@ void proc_cleanup(pcb_t *proc) {
             swap_free(page_table_entry);
         }
     }
-    fte_t* current_frame_table = frame_table + proc->saved_ptbr;
+    fte_t* current_frame_table = ((fte_t*) mem) + proc->saved_ptbr;
     current_frame_table->mapped = 0;
     current_frame_table->protected = 0;
 }

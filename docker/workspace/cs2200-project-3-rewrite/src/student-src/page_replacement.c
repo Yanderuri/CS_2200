@@ -8,6 +8,7 @@
 pfn_t select_victim_frame(void);
 
 pfn_t last_evicted = 0;
+// why would we ever remove frame_table[0]?
 volatile static pfn_t fifo_counter = 1;
 
 /**
@@ -92,7 +93,7 @@ pfn_t select_victim_frame() {
                 return i;
             }
             if (i + 1 == NUM_FRAMES) {
-                i = 1;
+                i = 0;
             }
         }
     } else if (replacement == CLOCKSWEEP) {
@@ -106,7 +107,7 @@ pfn_t select_victim_frame() {
                 }
             }
             if (i + 1 == NUM_FRAMES) {
-                i = 1;
+                i = 0;
             }
         }
     }

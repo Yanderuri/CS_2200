@@ -15,6 +15,7 @@ typedef struct ft_entry {
     uint8_t protected;          /* set if the frame holds a page that should be
                                 immune from eviction */
     uint8_t mapped;             /* set if the frame is mapped. */
+    /* isn't this the thing that should be in page_table entry instead? */
     uint8_t referenced;         /* set if the entry has been recently accessed. */         
     pcb_t *process;             /* A pointer to the owning process's PCB */
     vpn_t vpn;                  /* The VPN mapped by the process using this frame. */
