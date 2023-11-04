@@ -68,6 +68,14 @@ static sched_algorithm_t scheduler_algorithm;
 static unsigned int cpu_count;
 static unsigned int age_weight;
 
+
+/*
+    Vy from her past self to future self
+    Read this shit: 
+        https://linux.die.net/man/3/pthread_mutex_lock
+        https://linux.die.net/man/3/pthread_cond_wait
+*/
+
 /** ------------------------Problem 3-----------------------------------
  * Checkout PDF Section 5 for this problem
  * 
@@ -105,12 +113,16 @@ void enqueue(queue_t *queue, pcb_t *process)
 {
     /* FIX ME */
     if (is_empty(queue)) {
+        pthread_mutex_lock(&queue_mutex);
         queue->head = process;
         queue->tail = process;
+        pthread_mutex_unlock(&queue_mutex);
     } else {
         // just add to tail
+        pthread_mutex_lock(&queue_mutex);
         queue->tail->next = process;
         queue->tail = process;
+        pthread_mutex_unlock(&queue_mutex);
     }
 }
 
@@ -129,12 +141,23 @@ void enqueue(queue_t *queue, pcb_t *process)
 pcb_t *dequeue(queue_t *queue)
 {
     /* FIX ME */
-    pcb_t *process = queue->head;
+    pcb_t *process;
+    pthread_mutex_lock(&queue_mutex);
+    if (is_empty(queue)) {
+        // technically, if dequeue tries to unlock a mutex that this thread didn't lock
+        // it will cause undefined behavior
+
+        pthread_mutex_unlock(&queue_mutex);
+        return NULL;
+    }
+    process = queue->head;
     queue->head = queue->head->next;
-    if (queue->tail == process) {
+    if (queue->head == NULL) {
         queue->tail = NULL;
     }
-    process->next = NULL;
+    // a running process should never have a next pointer
+    process -> next = NULL;
+    pthread_mutex_unlock(&queue_mutex);
     return process;
 }
 
@@ -150,7 +173,10 @@ pcb_t *dequeue(queue_t *queue)
  */
 bool is_empty(queue_t *queue)
 {
+    // is this mutex really needed?
+    pthread_mutex_lock(&queue_mutex);
     return queue->head == NULL;
+    pthread_mutex_unlock(&queue_mutex);
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -164,7 +190,17 @@ bool is_empty(queue_t *queue)
  */
 static void schedule(unsigned int cpu_id)
 {
-    /* FIX ME */
+    /* FIX ME maybe? */
+    while (is_empty(rq)) {
+        pthread_cond_wait(&queue_not_empty, &queue_mutex);
+    }
+    pthread_mutex_lock(&queue_mutex);
+    pcb_t *process = dequeue(rq);
+    current[cpu_id] = process;
+    pthread_mutex_unlock(&queue_mutex);
+    process->state = PROCESS_RUNNING;
+    // hardcoded timeslice not a good idea
+    context_switch(cpu_id, process, -1);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -178,19 +214,18 @@ static void schedule(unsigned int cpu_id)
  */
 extern void idle(unsigned int cpu_id)
 {
-   /* FIX ME */
-    schedule(0);
-
     /*
-     * REMOVE THE LINE BELOW AFTER IMPLEMENTING IDLE()
-     *
-     * idle() must block when the ready queue is empty, or else the CPU threads
-     * will spin in a loop.  Until a ready queue is implemented, we'll put the
-     * thread to sleep to keep it from consuming 100% of the CPU time.  Once
-     * you implement a proper idle() function using a condition variable,
-     * remove the call to mt_safe_usleep() below.
-     */
-    mt_safe_usleep(1000000);
+        if each CPU is calling idle, then the mutex wouldn't be necessary
+        but if the simulator is calling idle, then the mutex is necessary
+        
+        multiple simulator threads should block until the first blocking thread is done
+    */
+    pthread_mutex_lock(&queue_mutex);
+    while(is_empty(rq)) {
+        pthread_cond_wait(&queue_not_empty, &queue_mutex);
+    }
+    pthread_mutex_unlock(&queue_mutex);
+    schedule(cpu_id);
 }
 
 /** ------------------------Problem 2 & 3-----------------------------------
@@ -220,6 +255,11 @@ extern void preempt(unsigned int cpu_id)
 extern void yield(unsigned int cpu_id)
 {
     /* FIX ME */
+    pthread_mutex_lock(&queue_mutex);
+    pcb_t *process = current[cpu_id];
+    process->state = PROCESS_WAITING;
+    pthread_mutex_unlock(&queue_mutex);
+    schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -232,6 +272,11 @@ extern void yield(unsigned int cpu_id)
 extern void terminate(unsigned int cpu_id)
 {
     /* FIX ME */
+    pthread_mutex_lock(&queue_mutex);
+    pcb_t *process = current[cpu_id];
+    process->state = PROCESS_TERMINATED;
+    current[cpu_id] = NULL;
+    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**  ------------------------Problem 1A & 3---------------------------------
@@ -249,6 +294,11 @@ extern void terminate(unsigned int cpu_id)
 extern void wake_up(pcb_t *process)
 {
     /* FIX ME */
+    pthread_mutex_lock(&queue_mutex);
+    process->state = PROCESS_READY; 
+    enqueue(rq, process);
+    pthread_cond_signal(&queue_not_empty);
+    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**
