@@ -143,12 +143,8 @@ pcb_t *dequeue(queue_t *queue)
     /* FIX ME */
     pcb_t *process;
     pthread_mutex_lock(&queue_mutex);
-    if (is_empty(queue)) {
-        // technically, if dequeue tries to unlock a mutex that this thread didn't lock
-        // it will cause undefined behavior
-
-        pthread_mutex_unlock(&queue_mutex);
-        return NULL;
+    while (is_empty(queue)) {
+        pthread_cond_wait(&queue_not_empty, &queue_mutex);
     }
     process = queue->head;
     queue->head = queue->head->next;
@@ -174,9 +170,8 @@ pcb_t *dequeue(queue_t *queue)
 bool is_empty(queue_t *queue)
 {
     // is this mutex really needed?
-    pthread_mutex_lock(&queue_mutex);
+    // can't mutex then return since mutex won't be unlocked
     return queue->head == NULL;
-    pthread_mutex_unlock(&queue_mutex);
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -191,10 +186,10 @@ bool is_empty(queue_t *queue)
 static void schedule(unsigned int cpu_id)
 {
     /* FIX ME maybe? */
+    pthread_mutex_lock(&queue_mutex);
     while (is_empty(rq)) {
         pthread_cond_wait(&queue_not_empty, &queue_mutex);
     }
-    pthread_mutex_lock(&queue_mutex);
     pcb_t *process = dequeue(rq);
     current[cpu_id] = process;
     pthread_mutex_unlock(&queue_mutex);
@@ -330,7 +325,7 @@ int main(int argc, char *argv[])
     /* Parse the command line arguments */
     cpu_count = strtoul(argv[1], NULL, 0);
 
-    /* Allocate the current[] array and its mutex */
+  ~  /* Allocate the current[] array and its mutex */
     current = malloc(sizeof(pcb_t *) * cpu_count);
     assert(current != NULL);
     pthread_mutex_init(&current_mutex, NULL);
