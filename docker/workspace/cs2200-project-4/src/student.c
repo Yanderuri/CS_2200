@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 {    /* FIX ME */
     scheduler_algorithm = FCFS;
     age_weight = 0;
-    
+
     if (argc < 2 || argc > 4)
     {
         fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
@@ -328,22 +328,21 @@ int main(int argc, char *argv[])
         return -1;
     }
     cpu_count = strtoul(argv[1], NULL, 0);
+    if (argc >= 3){
     char opt = getopt(argc, argv, "rp");
-    switch(opt){
-        case 'r':
-            scheduler_algorithm = RR;
-            break;
-        case 'p':
-            scheduler_algorithm = PA;
-            age_weight = strtoul(argv[3], NULL, 0);
-            break;
-        default:
-            fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
-                    "Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
-                    "    Default : FCFS Scheduler\n"
-                    "         -r : Round-Robin Scheduler\n1\n"
-                    "         -p : Priority Aging Scheduler\n");
-            return -1;
+        switch(opt){
+            case 'r':
+                scheduler_algorithm = RR;
+                break;
+            case 'p':
+                scheduler_algorithm = PA;
+                age_weight = strtoul(argv[3], NULL, 0);
+                break;
+            default:
+                scheduler_algorithm = FCFS;
+                age_weight = 0; /*are you sure about this*/
+                break;
+        }
     }
 
    /* Allocate the current[] array and its mutex */
