@@ -1,8 +1,8 @@
 CS 2200 Fall 2023
 Project 4
 
-Name:
-GT Username:
+Name: Vy Mai
+GT Username: 903681630
 
 6.1 FIFO Scheduler
 Run your OS simulation with 1, 2, and 4 CPUs. Compare the total execution time of each. Is there a linear relationship between the number of CPUs and total execution time? Why or why not? Keep in mind that the execution time refers to the simulated execution time.

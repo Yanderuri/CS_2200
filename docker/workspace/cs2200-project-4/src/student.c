@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "student.h"
+#include <unistd.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -112,18 +113,19 @@ extern double priority_with_age(unsigned int current_time, pcb_t *process) {
 void enqueue(queue_t *queue, pcb_t *process)
 {
     /* FIX ME */
-    if (is_empty(queue)) {
-        pthread_mutex_lock(&queue_mutex);
-        queue->head = process;
-        queue->tail = process;
-        pthread_mutex_unlock(&queue_mutex);
+
+    /* First come first serve only*/
+    pthread_mutex_lock(&queue_mutex);
+    if (queue->tail == NULL) {
+       queue->tail = process;
+       queue->head = queue->tail;
     } else {
-        // just add to tail
-        pthread_mutex_lock(&queue_mutex);
         queue->tail->next = process;
-        queue->tail = process;
-        pthread_mutex_unlock(&queue_mutex);
+        queue->tail = queue->tail->next;
+        queue->tail->next = NULL;
     }
+    pthread_cond_signal(&queue_not_empty);
+    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**
@@ -141,20 +143,29 @@ void enqueue(queue_t *queue, pcb_t *process)
 pcb_t *dequeue(queue_t *queue)
 {
     /* FIX ME */
-    pcb_t *process;
-    pthread_mutex_lock(&queue_mutex);
-    while (is_empty(queue)) {
-        pthread_cond_wait(&queue_not_empty, &queue_mutex);
+    if (scheduler_algorithm == FCFS){
+        pcb_t *process;
+        pthread_mutex_lock(&queue_mutex);
+        if (is_empty(queue)) {
+            if (pthread_mutex_unlock(&queue_mutex) != 0){
+                return 0;
+            }
+        }
+        process = queue->head;
+        if (queue->head == queue->tail) {
+            queue->head = NULL;
+            queue->tail = NULL;
+        }
+        else{
+            // forgor the else lmao
+            queue->head = queue->head->next;
+        }
+        // a running process should never have a next pointer
+        process->next = NULL;
+        pthread_mutex_unlock(&queue_mutex);
+        return process;
     }
-    process = queue->head;
-    queue->head = queue->head->next;
-    if (queue->head == NULL) {
-        queue->tail = NULL;
-    }
-    // a running process should never have a next pointer
-    process -> next = NULL;
-    pthread_mutex_unlock(&queue_mutex);
-    return process;
+    return 0;
 }
 
 /** ------------------------Problem 0-----------------------------------
@@ -171,7 +182,7 @@ bool is_empty(queue_t *queue)
 {
     // is this mutex really needed?
     // can't mutex then return since mutex won't be unlocked
-    return queue->head == NULL;
+    return !(queue->head);
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -187,15 +198,12 @@ static void schedule(unsigned int cpu_id)
 {
     /* FIX ME maybe? */
     pthread_mutex_lock(&queue_mutex);
-    while (is_empty(rq)) {
-        pthread_cond_wait(&queue_not_empty, &queue_mutex);
-    }
-    pcb_t *process = dequeue(rq);
+    pcb_t *process = (is_empty(rq)) ? 0 : (dequeue(rq));
     current[cpu_id] = process;
-    pthread_mutex_unlock(&queue_mutex);
     process->state = PROCESS_RUNNING;
     // hardcoded timeslice not a good idea
     context_switch(cpu_id, process, -1);
+    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -209,12 +217,6 @@ static void schedule(unsigned int cpu_id)
  */
 extern void idle(unsigned int cpu_id)
 {
-    /*
-        if each CPU is calling idle, then the mutex wouldn't be necessary
-        but if the simulator is calling idle, then the mutex is necessary
-        
-        multiple simulator threads should block until the first blocking thread is done
-    */
     pthread_mutex_lock(&queue_mutex);
     while(is_empty(rq)) {
         pthread_cond_wait(&queue_not_empty, &queue_mutex);
@@ -237,6 +239,12 @@ extern void idle(unsigned int cpu_id)
 extern void preempt(unsigned int cpu_id)
 {
     /* FIX ME */
+    pthread_mutex_lock(&queue_mutex);
+    pcb_t *process = current[cpu_id];
+    process -> state = PROCESS_READY;
+    enqueue(rq, process);
+    pthread_mutex_unlock(&queue_mutex);
+    schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -270,7 +278,7 @@ extern void terminate(unsigned int cpu_id)
     pthread_mutex_lock(&queue_mutex);
     pcb_t *process = current[cpu_id];
     process->state = PROCESS_TERMINATED;
-    current[cpu_id] = NULL;
+    // current[cpu_id] = NULL;
     pthread_mutex_unlock(&queue_mutex);
 }
 
@@ -306,12 +314,11 @@ extern void wake_up(pcb_t *process)
  * keep track of the scheduling algorithm you're using.
  */
 int main(int argc, char *argv[])
-{
-    /* FIX ME */
+{    /* FIX ME */
     scheduler_algorithm = FCFS;
     age_weight = 0;
-
-    if (argc != 2)
+    
+    if (argc < 2 || argc > 4)
     {
         fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
                         "Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
@@ -320,18 +327,32 @@ int main(int argc, char *argv[])
                         "         -p : Priority Aging Scheduler\n");
         return -1;
     }
-
-
-    /* Parse the command line arguments */
     cpu_count = strtoul(argv[1], NULL, 0);
+    char opt = getopt(argc, argv, "rp");
+    switch(opt){
+        case 'r':
+            scheduler_algorithm = RR;
+            break;
+        case 'p':
+            scheduler_algorithm = PA;
+            age_weight = strtoul(argv[3], NULL, 0);
+            break;
+        default:
+            fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
+                    "Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
+                    "    Default : FCFS Scheduler\n"
+                    "         -r : Round-Robin Scheduler\n1\n"
+                    "         -p : Priority Aging Scheduler\n");
+            return -1;
+    }
 
-  ~  /* Allocate the current[] array and its mutex */
+   /* Allocate the current[] array and its mutex */
     current = malloc(sizeof(pcb_t *) * cpu_count);
     assert(current != NULL);
     pthread_mutex_init(&current_mutex, NULL);
     pthread_mutex_init(&queue_mutex, NULL);
     pthread_cond_init(&queue_not_empty, NULL);
-    rq = (queue_t *)malloc(sizeof(queue_t));
+    rq = (queue_t *) malloc(sizeof(queue_t));
     assert(rq != NULL);
 
     /* Start the simulator in the library */
