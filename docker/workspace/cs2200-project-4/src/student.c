@@ -19,7 +19,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-#define DEBUG_PRINTFS 1
+#define DEBUG_PRINTFS 0
 
 /** Function prototypes **/
 extern void idle(unsigned int cpu_id);
@@ -120,7 +120,7 @@ void enqueue(queue_t *queue, pcb_t *process)
     #endif
     /* First come first serve only*/
     pthread_mutex_lock(&queue_mutex);
-    if (process == 0 && process->state != PROCESS_TERMINATED){
+    if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
         pthread_mutex_unlock(&queue_mutex);
         return;
     }
@@ -311,6 +311,9 @@ extern void terminate(unsigned int cpu_id)
     process->state = PROCESS_TERMINATED;
     current[cpu_id] = 0;
     pthread_mutex_unlock(&current_mutex);
+    // I FORGOT TO RESCHEDULE
+    // :skull:
+    schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A & 3---------------------------------
