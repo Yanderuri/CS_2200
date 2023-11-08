@@ -19,6 +19,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#define DEBUG_PRINTFS 1
+
 /** Function prototypes **/
 extern void idle(unsigned int cpu_id);
 extern void preempt(unsigned int cpu_id);
@@ -113,18 +115,28 @@ extern double priority_with_age(unsigned int current_time, pcb_t *process) {
 void enqueue(queue_t *queue, pcb_t *process)
 {
     /* FIX ME */
-
+    #if DEBUG_PRINTFS
+    printf("enqueue started\n");
+    #endif
     /* First come first serve only*/
     pthread_mutex_lock(&queue_mutex);
+    if (process == 0 && process->state != PROCESS_TERMINATED){
+        pthread_mutex_unlock(&queue_mutex);
+        return;
+    }
     if (queue->tail == NULL) {
        queue->tail = process;
        queue->head = queue->tail;
+       queue->tail->next = NULL;
     } else {
         queue->tail->next = process;
         queue->tail = queue->tail->next;
         queue->tail->next = NULL;
     }
     pthread_cond_signal(&queue_not_empty);
+    #if DEBUG_PRINTFS
+    printf("enqueue finished\n");
+    #endif
     pthread_mutex_unlock(&queue_mutex);
 }
 
@@ -142,6 +154,9 @@ void enqueue(queue_t *queue, pcb_t *process)
  */
 pcb_t *dequeue(queue_t *queue)
 {
+    #if DEBUG_PRINTFS
+    printf("dequeue\n");
+    #endif
     /* FIX ME */
     if (scheduler_algorithm == FCFS){
         pcb_t *process;
@@ -161,7 +176,9 @@ pcb_t *dequeue(queue_t *queue)
             queue->head = queue->head->next;
         }
         // a running process should never have a next pointer
-        process->next = NULL;
+        if (process != NULL){
+            process->next = NULL;
+        }
         pthread_mutex_unlock(&queue_mutex);
         return process;
     }
@@ -182,7 +199,7 @@ bool is_empty(queue_t *queue)
 {
     // is this mutex really needed?
     // can't mutex then return since mutex won't be unlocked
-    return !(queue->head);
+     return queue->head == NULL;
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -196,14 +213,19 @@ bool is_empty(queue_t *queue)
  */
 static void schedule(unsigned int cpu_id)
 {
+    #if DEBUG_PRINTFS
+    printf("schedule(%d)\n", cpu_id);
+    #endif
     /* FIX ME maybe? */
-    pthread_mutex_lock(&queue_mutex);
-    pcb_t *process = (is_empty(rq)) ? 0 : (dequeue(rq));
+    pthread_mutex_lock(&current_mutex);
+    pcb_t *process = dequeue(rq);
     current[cpu_id] = process;
-    process->state = PROCESS_RUNNING;
+    if (process != 0) {
+        process->state = PROCESS_RUNNING;
+    }
     // hardcoded timeslice not a good idea
+    pthread_mutex_unlock(&current_mutex);
     context_switch(cpu_id, process, -1);
-    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -217,6 +239,9 @@ static void schedule(unsigned int cpu_id)
  */
 extern void idle(unsigned int cpu_id)
 {
+    #if DEBUG_PRINTFS
+    printf("cpu %d is idle\n", cpu_id);
+    #endif
     pthread_mutex_lock(&queue_mutex);
     while(is_empty(rq)) {
         pthread_cond_wait(&queue_not_empty, &queue_mutex);
@@ -239,12 +264,12 @@ extern void idle(unsigned int cpu_id)
 extern void preempt(unsigned int cpu_id)
 {
     /* FIX ME */
-    pthread_mutex_lock(&queue_mutex);
-    pcb_t *process = current[cpu_id];
-    process -> state = PROCESS_READY;
-    enqueue(rq, process);
-    pthread_mutex_unlock(&queue_mutex);
-    schedule(cpu_id);
+    // pthread_mutex_lock(&queue_mutex);
+    // pcb_t *process = current[cpu_id];
+    // process -> state = PROCESS_READY;
+    // enqueue(rq, process);
+    // pthread_mutex_unlock(&queue_mutex);
+    // schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -257,11 +282,14 @@ extern void preempt(unsigned int cpu_id)
  */
 extern void yield(unsigned int cpu_id)
 {
+    #if DEBUG_PRINTFS
+    printf("cpu %d is yielding\n", cpu_id);
+    #endif
     /* FIX ME */
-    pthread_mutex_lock(&queue_mutex);
+    pthread_mutex_lock(&current_mutex);
     pcb_t *process = current[cpu_id];
     process->state = PROCESS_WAITING;
-    pthread_mutex_unlock(&queue_mutex);
+    pthread_mutex_unlock(&current_mutex);
     schedule(cpu_id);
 }
 
@@ -274,12 +302,15 @@ extern void yield(unsigned int cpu_id)
  */
 extern void terminate(unsigned int cpu_id)
 {
+    #if DEBUG_PRINTFS
+    printf("cpu %d is terminating\n", cpu_id);
+    #endif
     /* FIX ME */
-    pthread_mutex_lock(&queue_mutex);
+    pthread_mutex_lock(&current_mutex);
     pcb_t *process = current[cpu_id];
     process->state = PROCESS_TERMINATED;
-    // current[cpu_id] = NULL;
-    pthread_mutex_unlock(&queue_mutex);
+    current[cpu_id] = 0;
+    pthread_mutex_unlock(&current_mutex);
 }
 
 /**  ------------------------Problem 1A & 3---------------------------------
@@ -297,11 +328,13 @@ extern void terminate(unsigned int cpu_id)
 extern void wake_up(pcb_t *process)
 {
     /* FIX ME */
-    pthread_mutex_lock(&queue_mutex);
-    process->state = PROCESS_READY; 
-    enqueue(rq, process);
-    pthread_cond_signal(&queue_not_empty);
-    pthread_mutex_unlock(&queue_mutex);
+    // does FCFS need to mutex lock?
+    // pthread_mutex_lock(&current_mutex);
+    if (process != 0 && process->state != PROCESS_TERMINATED){
+        process->state = PROCESS_READY;
+        enqueue(rq, process);
+    }
+    // pthread_mutex_unlock(&current_mutex);
 }
 
 /**
