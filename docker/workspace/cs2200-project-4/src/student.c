@@ -70,6 +70,7 @@ static pthread_cond_t queue_not_empty;
 static sched_algorithm_t scheduler_algorithm;
 static unsigned int cpu_count;
 static unsigned int age_weight;
+static unsigned int time_slice;
 
 
 /*
@@ -225,7 +226,12 @@ static void schedule(unsigned int cpu_id)
     }
     // hardcoded timeslice not a good idea
     pthread_mutex_unlock(&current_mutex);
-    context_switch(cpu_id, process, -1);
+    if (scheduler_algorithm == RR){
+        context_switch(cpu_id, process, time_slice);
+    }
+    else{
+        context_switch(cpu_id, process, -1);
+    }
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -264,12 +270,12 @@ extern void idle(unsigned int cpu_id)
 extern void preempt(unsigned int cpu_id)
 {
     /* FIX ME */
-    // pthread_mutex_lock(&queue_mutex);
-    // pcb_t *process = current[cpu_id];
-    // process -> state = PROCESS_READY;
-    // enqueue(rq, process);
-    // pthread_mutex_unlock(&queue_mutex);
-    // schedule(cpu_id);
+    pthread_mutex_lock(&queue_mutex);
+    pcb_t *process = current[cpu_id];
+    process -> state = PROCESS_READY;
+    enqueue(rq, process);
+    pthread_mutex_unlock(&queue_mutex);
+    schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -353,6 +359,7 @@ int main(int argc, char *argv[])
 {    /* FIX ME */
     scheduler_algorithm = FCFS;
     age_weight = 0;
+    time_slice = 0; // -1 for FCFS
 
     if (argc < 2 || argc > 4)
     {
@@ -364,21 +371,21 @@ int main(int argc, char *argv[])
         return -1;
     }
     cpu_count = strtoul(argv[1], NULL, 0);
-    if (argc >= 3){
-    char opt = getopt(argc, argv, "rp");
-        switch(opt){
-            case 'r':
-                scheduler_algorithm = RR;
-                break;
-            case 'p':
-                scheduler_algorithm = PA;
-                age_weight = strtoul(argv[3], NULL, 0);
-                break;
-            default:
-                scheduler_algorithm = FCFS;
-                age_weight = 0; /*are you sure about this*/
-                break;
-        }
+    if (argc == 4){
+        char opt = getopt(argc, argv, "rp");
+            switch(opt){
+                case 'r':
+                    scheduler_algorithm = RR;
+                    time_slice = strtoul(argv[3], NULL, 0);
+                    break;
+                case 'p':
+                    scheduler_algorithm = PA;
+                    age_weight = strtoul(argv[3], NULL, 0);
+                    break;
+                default:
+                    scheduler_algorithm = FCFS;
+                    break;
+            }
     }
 
    /* Allocate the current[] array and its mutex */
