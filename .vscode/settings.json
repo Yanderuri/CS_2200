@@ -1,5 +1,7 @@
 {
     "files.associations": {
         "stats.h": "c"
-    }
+    },
+    "cmake.configureOnOpen": true,
+    "C_Cpp.default.compilerPath": "c:\\Users\\vmai\\scoop\\apps\\gcc\\11.2.0\\bin\\gcc.exe"
 }

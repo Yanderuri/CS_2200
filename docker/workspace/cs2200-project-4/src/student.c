@@ -120,25 +120,30 @@ void enqueue(queue_t *queue, pcb_t *process)
     printf("enqueue started\n");
     #endif
     /* First come first serve only*/
-    pthread_mutex_lock(&queue_mutex);
-    if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
-        pthread_mutex_unlock(&queue_mutex);
-        return;
+    if (scheduler_algorithm == PA){
+
     }
-    if (queue->tail == NULL) {
-       queue->tail = process;
-       queue->head = queue->tail;
-       queue->tail->next = NULL;
-    } else {
-        queue->tail->next = process;
-        queue->tail = queue->tail->next;
+    else{
+        pthread_mutex_lock(&queue_mutex);
+        if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
+            pthread_mutex_unlock(&queue_mutex);
+            return;
+        }
+        if (queue->head == NULL && queue->tail == NULL) {
+        queue->tail = process;
+        queue->head = queue->tail;
         queue->tail->next = NULL;
+        } else {
+            queue->tail->next = process;
+            queue->tail = queue->tail->next;
+            queue->tail->next = NULL;
+        }
+        pthread_cond_signal(&queue_not_empty);
+        pthread_mutex_unlock(&queue_mutex);
     }
-    pthread_cond_signal(&queue_not_empty);
     #if DEBUG_PRINTFS
     printf("enqueue finished\n");
     #endif
-    pthread_mutex_unlock(&queue_mutex);
 }
 
 /**
@@ -156,16 +161,16 @@ void enqueue(queue_t *queue, pcb_t *process)
 pcb_t *dequeue(queue_t *queue)
 {
     #if DEBUG_PRINTFS
-    printf("dequeue\n");
+    printf("dequeue started\n");
     #endif
-    /* FIX ME */
-    if (scheduler_algorithm == FCFS){
+        
+
+    if (scheduler_algorithm == FCFS || scheduler_algorithm == RR){
         pcb_t *process;
         pthread_mutex_lock(&queue_mutex);
-        if (is_empty(queue)) {
-            if (pthread_mutex_unlock(&queue_mutex) != 0){
-                return 0;
-            }
+        if (is_empty(queue)){
+            pthread_mutex_unlock(&queue_mutex);
+            return 0;
         }
         process = queue->head;
         if (queue->head == queue->tail) {
@@ -176,12 +181,18 @@ pcb_t *dequeue(queue_t *queue)
             // forgor the else lmao
             queue->head = queue->head->next;
         }
+        pthread_mutex_unlock(&queue_mutex);
         // a running process should never have a next pointer
         if (process != NULL){
             process->next = NULL;
         }
-        pthread_mutex_unlock(&queue_mutex);
+        #if DEBUG_PRINTFS
+        printf("dequeue ended\n");
+        #endif
         return process;
+    }
+    else if (scheduler_algorithm == PA){
+
     }
     return 0;
 }
@@ -200,7 +211,7 @@ bool is_empty(queue_t *queue)
 {
     // is this mutex really needed?
     // can't mutex then return since mutex won't be unlocked
-     return queue->head == NULL;
+    return queue->head == NULL;
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -217,15 +228,14 @@ static void schedule(unsigned int cpu_id)
     #if DEBUG_PRINTFS
     printf("schedule(%d)\n", cpu_id);
     #endif
-    /* FIX ME maybe? */
-    pthread_mutex_lock(&current_mutex);
     pcb_t *process = dequeue(rq);
+    pthread_mutex_lock(&current_mutex);
     current[cpu_id] = process;
-    if (process != 0) {
+    pthread_mutex_unlock(&current_mutex);
+    if (process != NULL) {
         process->state = PROCESS_RUNNING;
     }
     // hardcoded timeslice not a good idea
-    pthread_mutex_unlock(&current_mutex);
     if (scheduler_algorithm == RR){
         context_switch(cpu_id, process, time_slice);
     }
@@ -270,11 +280,15 @@ extern void idle(unsigned int cpu_id)
 extern void preempt(unsigned int cpu_id)
 {
     /* FIX ME */
-    pthread_mutex_lock(&queue_mutex);
+    #if DEBUG_PRINTFS
+    printf("cpu %d preempt\n", cpu_id);
+    #endif 
+    // i should only need to lock it here right?
+    pthread_mutex_lock(&current_mutex);
     pcb_t *process = current[cpu_id];
-    process -> state = PROCESS_READY;
+    pthread_mutex_unlock(&current_mutex);
+    process->state = PROCESS_READY;
     enqueue(rq, process);
-    pthread_mutex_unlock(&queue_mutex);
     schedule(cpu_id);
 }
 
@@ -294,8 +308,8 @@ extern void yield(unsigned int cpu_id)
     /* FIX ME */
     pthread_mutex_lock(&current_mutex);
     pcb_t *process = current[cpu_id];
-    process->state = PROCESS_WAITING;
     pthread_mutex_unlock(&current_mutex);
+    process->state = PROCESS_WAITING;
     schedule(cpu_id);
 }
 
@@ -314,9 +328,11 @@ extern void terminate(unsigned int cpu_id)
     /* FIX ME */
     pthread_mutex_lock(&current_mutex);
     pcb_t *process = current[cpu_id];
-    process->state = PROCESS_TERMINATED;
     current[cpu_id] = 0;
     pthread_mutex_unlock(&current_mutex);
+    if (process != NULL){
+        process->state = PROCESS_TERMINATED;
+    }
     // I FORGOT TO RESCHEDULE
     // :skull:
     schedule(cpu_id);
@@ -377,6 +393,7 @@ int main(int argc, char *argv[])
                 case 'r':
                     scheduler_algorithm = RR;
                     time_slice = strtoul(argv[3], NULL, 0);
+                    // printf("timeslice %d\n", time_slice);
                     break;
                 case 'p':
                     scheduler_algorithm = PA;
