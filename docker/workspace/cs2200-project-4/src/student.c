@@ -15,6 +15,7 @@
 
 #include "student.h"
 #include <unistd.h>
+#include <limits.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -70,7 +71,7 @@ static pthread_cond_t queue_not_empty;
 static sched_algorithm_t scheduler_algorithm;
 static unsigned int cpu_count;
 static unsigned int age_weight;
-static unsigned int time_slice;
+static int time_slice;
 
 
 /*
@@ -95,7 +96,7 @@ static unsigned int time_slice;
  */
 extern double priority_with_age(unsigned int current_time, pcb_t *process) {
     /* FIX ME */
-    return 0.0;
+    return process -> priority + (current_time - process -> enqueue_time) * age_weight;
 }
 
 /** ------------------------Problem 0 & 3-----------------------------------
@@ -121,7 +122,45 @@ void enqueue(queue_t *queue, pcb_t *process)
     #endif
     /* First come first serve only*/
     if (scheduler_algorithm == PA){
-
+        pthread_mutex_lock(&queue_mutex);
+        if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
+            pthread_mutex_unlock(&queue_mutex);
+            return;
+        }
+        if (queue->head == NULL && queue->tail == NULL){
+            queue->tail = process;
+            queue->head = queue->tail;
+            queue->tail->next = NULL;
+        }
+        else{
+            pcb_t *forward, *previous;
+            forward = queue->head;
+            previous = queue->head;
+            bool inserted = false;
+            while(forward != NULL){
+                if (priority_with_age(get_current_time(), process) > priority_with_age(get_current_time(), forward)){
+                    if (forward == queue->head){
+                        process->next = queue->head;
+                        queue->head = process;
+                    }
+                    else{
+                        previous->next = process;
+                        process->next = forward;
+                    }
+                    inserted = true;
+                    break;
+                }
+                previous = forward;
+                forward = forward->next;
+            }
+            if (!inserted){
+                queue->tail->next = process;
+                queue->tail = queue->tail->next;
+                queue->tail->next = NULL;
+            }
+        }
+        pthread_cond_signal(&queue_not_empty);
+        pthread_mutex_unlock(&queue_mutex);
     }
     else{
         pthread_mutex_lock(&queue_mutex);
@@ -130,9 +169,9 @@ void enqueue(queue_t *queue, pcb_t *process)
             return;
         }
         if (queue->head == NULL && queue->tail == NULL) {
-        queue->tail = process;
-        queue->head = queue->tail;
-        queue->tail->next = NULL;
+            queue->tail = process;
+            queue->head = queue->tail;
+            queue->tail->next = NULL;
         } else {
             queue->tail->next = process;
             queue->tail = queue->tail->next;
@@ -163,10 +202,8 @@ pcb_t *dequeue(queue_t *queue)
     #if DEBUG_PRINTFS
     printf("dequeue started\n");
     #endif
-        
 
-    if (scheduler_algorithm == FCFS || scheduler_algorithm == RR){
-        pcb_t *process;
+    pcb_t *process;
         pthread_mutex_lock(&queue_mutex);
         if (is_empty(queue)){
             pthread_mutex_unlock(&queue_mutex);
@@ -186,15 +223,10 @@ pcb_t *dequeue(queue_t *queue)
         if (process != NULL){
             process->next = NULL;
         }
+        return process;
         #if DEBUG_PRINTFS
         printf("dequeue ended\n");
         #endif
-        return process;
-    }
-    else if (scheduler_algorithm == PA){
-
-    }
-    return 0;
 }
 
 /** ------------------------Problem 0-----------------------------------
@@ -354,12 +386,36 @@ extern void wake_up(pcb_t *process)
 {
     /* FIX ME */
     // does FCFS need to mutex lock?
-    // pthread_mutex_lock(&current_mutex);
     if (process != 0 && process->state != PROCESS_TERMINATED){
         process->state = PROCESS_READY;
         enqueue(rq, process);
     }
-    // pthread_mutex_unlock(&current_mutex);
+    if (scheduler_algorithm == PA){
+        // finding the processor with the lowest priority
+        __uint32_t lowestPriorityFound = INT_MAX;
+        __uint8_t i = 0, cpuBeingScheduled = 0;
+        pthread_mutex_lock(&current_mutex);
+        while (i < cpu_count){
+            if (current[i] == NULL){
+                pthread_mutex_unlock(&current_mutex);
+                return;
+            }
+            else{
+                if (priority_with_age(get_current_time(), current[i]) < lowestPriorityFound){
+                    #if DEBUG_PRINTFS
+                    printf("found a lower priority i: %d\n", i);
+                    #endif
+                    lowestPriorityFound = priority_with_age(get_current_time(), current[i]);
+                    cpuBeingScheduled = i;
+                }
+            }
+            i++;
+        }
+        pthread_mutex_unlock(&current_mutex);
+        if (lowestPriorityFound < priority_with_age(get_current_time(), process)){
+            force_preempt(cpuBeingScheduled);
+        }
+    }
 }
 
 /**
@@ -387,22 +443,34 @@ int main(int argc, char *argv[])
         return -1;
     }
     cpu_count = strtoul(argv[1], NULL, 0);
-    if (argc == 4){
-        char opt = getopt(argc, argv, "rp");
-            switch(opt){
-                case 'r':
-                    scheduler_algorithm = RR;
-                    time_slice = strtoul(argv[3], NULL, 0);
-                    // printf("timeslice %d\n", time_slice);
-                    break;
-                case 'p':
-                    scheduler_algorithm = PA;
-                    age_weight = strtoul(argv[3], NULL, 0);
-                    break;
-                default:
-                    scheduler_algorithm = FCFS;
-                    break;
-            }
+    #if DEBUG_PRINTFS
+    printf("cpu count: %d\n", cpu_count);
+    #endif
+    char opt = getopt(argc, argv, "rp");
+    switch(opt){
+        case 'r':
+            scheduler_algorithm = RR;
+            time_slice = strtoul(argv[3], NULL, 10);
+            age_weight = 0;
+
+            #if DEBUG_PRINTFS
+            printf("RR selected\n");
+            printf("time slice %d\n", time_slice);
+            #endif
+            break;
+        case 'p':
+            scheduler_algorithm = PA;
+            time_slice = -1;
+            age_weight = strtoul(argv[3], NULL, 10);
+
+            #if DEBUG_PRINTFS
+            printf("PA selected\n");
+            printf("age weight %d\n", age_weight);
+            #endif
+            break;
+        default:
+            scheduler_algorithm = FCFS;
+            break;
     }
 
    /* Allocate the current[] array and its mutex */

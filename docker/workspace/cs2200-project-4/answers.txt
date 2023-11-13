@@ -7,15 +7,19 @@ GT Username: 903681630
 6.1 FIFO Scheduler
 Run your OS simulation with 1, 2, and 4 CPUs. Compare the total execution time of each. Is there a linear relationship between the number of CPUs and total execution time? Why or why not? Keep in mind that the execution time refers to the simulated execution time.
 ----------
-
-/* Fix me */
+1, 2 and 4 cpus respectively
+67.9s, 39.9s, 36.9s
+Definitely not linear. We may save more time as we get more processes but after a certain point some cores just stay idle.
 
 6.2 Round-Robin Scheduler
 Run your Round-Robin scheduler with timeslices of 800ms, 600ms, 400ms, and 200ms. Use only one CPU
 for your tests. Compare the statistics at the end of the simulation. Is there a relationship between the total waiting time and timeslice length? If so, what is it? In contrast, in a real OS, the shortest timeslice possible is usually not the best choice. Why not?
 ----------
 
-/* Fix me */
+800ms: 317.1s
+600ms: 302.3s
+400ms: 291.7s
+200ms: 284.4s
 
 6.3 Preemptive Priority Scheduler
 Priority schedulers can sometimes lead to starvation among processes with lower priority. What is a way
