@@ -127,7 +127,8 @@ void enqueue(queue_t *queue, pcb_t *process)
             pthread_mutex_unlock(&queue_mutex);
             return;
         }
-        if (queue->head == NULL && queue->tail == NULL){
+        process->enqueue_time = get_current_time();
+        if (queue->head == NULL){
             queue->tail = process;
             queue->head = queue->tail;
             queue->tail->next = NULL;
@@ -137,8 +138,9 @@ void enqueue(queue_t *queue, pcb_t *process)
             forward = queue->head;
             previous = queue->head;
             bool inserted = false;
+            double currentPriority = priority_with_age(get_current_time(), process);
             while(forward != NULL){
-                if (priority_with_age(get_current_time(), process) > priority_with_age(get_current_time(), forward)){
+                if (currentPriority >= priority_with_age(get_current_time(), forward)){
                     if (forward == queue->head){
                         process->next = queue->head;
                         queue->head = process;
@@ -155,8 +157,8 @@ void enqueue(queue_t *queue, pcb_t *process)
             }
             if (!inserted){
                 queue->tail->next = process;
+                process -> next = NULL;
                 queue->tail = queue->tail->next;
-                queue->tail->next = NULL;
             }
         }
         pthread_cond_signal(&queue_not_empty);
@@ -204,29 +206,29 @@ pcb_t *dequeue(queue_t *queue)
     #endif
 
     pcb_t *process;
-        pthread_mutex_lock(&queue_mutex);
-        if (is_empty(queue)){
-            pthread_mutex_unlock(&queue_mutex);
-            return 0;
-        }
-        process = queue->head;
-        if (queue->head == queue->tail) {
-            queue->head = NULL;
-            queue->tail = NULL;
-        }
-        else{
-            // forgor the else lmao
-            queue->head = queue->head->next;
-        }
+    pthread_mutex_lock(&queue_mutex);
+    if (is_empty(queue)){
         pthread_mutex_unlock(&queue_mutex);
-        // a running process should never have a next pointer
-        if (process != NULL){
-            process->next = NULL;
-        }
-        return process;
-        #if DEBUG_PRINTFS
-        printf("dequeue ended\n");
-        #endif
+        return 0;
+    }
+    process = queue->head;
+    if (queue->head == queue->tail) {
+        queue->head = NULL;
+        queue->tail = NULL;
+    }
+    else{
+        // forgor the else lmao
+        queue->head = queue->head->next;
+    }
+    pthread_mutex_unlock(&queue_mutex);
+    // a running process should never have a next pointer
+    if (process != NULL){
+        process->next = NULL;
+    }
+    return process;
+    #if DEBUG_PRINTFS
+    printf("dequeue ended\n");
+    #endif
 }
 
 /** ------------------------Problem 0-----------------------------------
@@ -261,19 +263,13 @@ static void schedule(unsigned int cpu_id)
     printf("schedule(%d)\n", cpu_id);
     #endif
     pcb_t *process = dequeue(rq);
-    pthread_mutex_lock(&current_mutex);
-    current[cpu_id] = process;
-    pthread_mutex_unlock(&current_mutex);
     if (process != NULL) {
         process->state = PROCESS_RUNNING;
     }
-    // hardcoded timeslice not a good idea
-    if (scheduler_algorithm == RR){
-        context_switch(cpu_id, process, time_slice);
-    }
-    else{
-        context_switch(cpu_id, process, -1);
-    }
+    pthread_mutex_lock(&current_mutex);
+    current[cpu_id] = process;
+    pthread_mutex_unlock(&current_mutex);
+    context_switch(cpu_id, process, time_slice);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -392,8 +388,8 @@ extern void wake_up(pcb_t *process)
     }
     if (scheduler_algorithm == PA){
         // finding the processor with the lowest priority
-        __uint32_t lowestPriorityFound = INT_MAX;
-        __uint8_t i = 0, cpuBeingScheduled = 0;
+        int lowestPriorityFound = INT_MAX;
+        unsigned int i = 0, cpuBeingScheduled = 0;
         pthread_mutex_lock(&current_mutex);
         while (i < cpu_count){
             if (current[i] == NULL){
@@ -452,7 +448,6 @@ int main(int argc, char *argv[])
             scheduler_algorithm = RR;
             time_slice = strtoul(argv[3], NULL, 10);
             age_weight = 0;
-
             #if DEBUG_PRINTFS
             printf("RR selected\n");
             printf("time slice %d\n", time_slice);
@@ -470,6 +465,8 @@ int main(int argc, char *argv[])
             break;
         default:
             scheduler_algorithm = FCFS;
+            time_slice = -1;
+            age_weight = 0;
             break;
     }
 

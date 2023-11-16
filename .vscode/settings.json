@@ -3,5 +3,6 @@
         "stats.h": "c"
     },
     "cmake.configureOnOpen": true,
-    "C_Cpp.default.compilerPath": "c:\\Users\\vmai\\scoop\\apps\\gcc\\11.2.0\\bin\\gcc.exe"
+    "C_Cpp.default.compilerPath": "c:\\Users\\vmai\\scoop\\apps\\gcc\\11.2.0\\bin\\gcc.exe",
+    "cmake.sourceDirectory": "/home/vy/Documents/gatech/CS_2200/docker/workspace/cs2200-project-4"
 }
