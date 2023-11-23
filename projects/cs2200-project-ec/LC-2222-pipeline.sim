@@ -3493,7 +3493,7 @@
         {
           "name": "com.ra4king.circuitsim.gui.peers.SubcircuitPeer",
           "x": 99,
-          "y": 31,
+          "y": 23,
           "properties": {
             "Label location": "NORTH",
             "Label": "",
@@ -4275,6 +4275,42 @@
           "x": 83,
           "y": 31,
           "length": 1,
+          "isHorizontal": true
+        },
+        {
+          "x": 100,
+          "y": 27,
+          "length": 3,
+          "isHorizontal": false
+        },
+        {
+          "x": 100,
+          "y": 30,
+          "length": 6,
+          "isHorizontal": true
+        },
+        {
+          "x": 101,
+          "y": 27,
+          "length": 9,
+          "isHorizontal": false
+        },
+        {
+          "x": 101,
+          "y": 36,
+          "length": 17,
+          "isHorizontal": true
+        },
+        {
+          "x": 106,
+          "y": 27,
+          "length": 3,
+          "isHorizontal": false
+        },
+        {
+          "x": 106,
+          "y": 27,
+          "length": 12,
           "isHorizontal": true
         },
         {
