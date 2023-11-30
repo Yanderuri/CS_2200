@@ -10,9 +10,9 @@
 
 /**
  * PLESE ENTER YOUR INFORMATION BELOW TO RECEIVE MANUAL GRADING CREDITS
- * Name: YOUR NAME
- * GTID: YOUR GTID
- * Summer 2022
+ * Name: Vy Mai
+ * GTID: 903681630
+ * Fall 2023
  */
 
 typedef struct message {
@@ -42,7 +42,28 @@ packet_t *packetize(char *buffer, int length, int *count) {
     packet_t *packets;
 
     /* ----  FIXME  ---- */
-
+    short even_packet_size = (length % MAX_PAYLOAD_LENGTH == 0);
+    int last_packet_length = even_packet_size ? MAX_PAYLOAD_LENGTH : length % MAX_PAYLOAD_LENGTH;
+    /*
+        even_packet_size == 0 --> length is not a multiple of MAX_PAYLOAD_LENGTH
+        even_packet_size == 1 --> length is a multiple of MAX_PAYLOAD_LENGTH
+    */
+    int cnt = length / MAX_PAYLOAD_LENGTH + (even_packet_size ? 0 : 1);
+    packets = (packet_t*) malloc(sizeof(packet_t) * (cnt));
+    int i = 0;
+    while(i < cnt - 1){
+        packets[i].type = DATA;
+        packets[i].checksum = checksum(buffer, MAX_PAYLOAD_LENGTH);
+        packets[i].payload_length = MAX_PAYLOAD_LENGTH;
+        memcpy(packets[i].payload, buffer, MAX_PAYLOAD_LENGTH);
+        buffer += MAX_PAYLOAD_LENGTH;
+        i++;
+    }
+    packets[i].type = LAST_DATA;
+    packets[i].checksum = checksum(buffer,last_packet_length);
+    packets[i].payload_length =  last_packet_length;
+    memcpy(packets[i].payload, buffer, last_packet_length);
+    *count = cnt;
     return packets;
 }
 
@@ -66,8 +87,25 @@ packet_t *packetize(char *buffer, int length, int *count) {
 int checksum(char *buffer, int length) {
 
     /* ----  FIXME  ---- */
-
-    return 0;
+    int checksum = 0;
+    if (length % 2 == 0){
+        int i = 0;
+        while(length > 1){
+            if (i % 4 == 0){
+                checksum += buffer[0] * 3 + buffer[1] * 3;
+            }
+            else{
+                checksum += buffer[0] / 3 + buffer[1] / 3;
+            }
+            i += 2;
+            buffer += 2;
+            length -= 2;
+        }
+        return checksum;
+    }
+    else{
+        return -1;
+    }
 }
 
 
@@ -87,6 +125,7 @@ static void *rtp_recv_thread(void *void_ptr) {
 
         /* Put messages in buffer until the last packet is received  */
         do {
+            loop_restart:
             if (net_recv_packet(connection->net_connection_handle, &packet) <= 0 || packet.type == TERM) {
                 /* remote side has disconnected */
                 connection->alive = 0;
@@ -105,6 +144,24 @@ static void *rtp_recv_thread(void *void_ptr) {
             * 4. if the payload matches, add the payload to the buffer
             */
 
+           if (packet.type == DATA){
+            if (packet.checksum != checksum(packet.payload, packet.payload_length)){
+                // SEND NACK
+            }
+            else{
+                // SEND ACK
+            }
+           }
+           if (packet.type == LAST_DATA){
+            if (packet.checksum != checksum(packet.payload, packet.payload_length)){
+                // SEND NACK
+                // go to loop start
+                // do i jank it with packet.type = DATA
+            }
+            else{
+                // SEND ACK
+            }
+           }
 
             /*
             *  What if the packet received is not a data packet?
