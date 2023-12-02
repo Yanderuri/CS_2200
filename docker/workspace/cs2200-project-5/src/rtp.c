@@ -144,7 +144,7 @@ static void *rtp_recv_thread(void *void_ptr) {
             * 4. if the payload matches, add the payload to the buffer
             */
 
-           if (packet.type == DATA){
+           if (DATA == packet.type){
             if (packet.checksum != checksum(packet.payload, packet.payload_length)){
                 // SEND NACK
             }
@@ -152,7 +152,7 @@ static void *rtp_recv_thread(void *void_ptr) {
                 // SEND ACK
             }
            }
-           if (packet.type == LAST_DATA){
+           if (LAST_DATA == packet.type){
             if (packet.checksum != checksum(packet.payload, packet.payload_length)){
                 // SEND NACK
                 // go to loop start
