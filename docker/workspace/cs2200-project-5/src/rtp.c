@@ -26,7 +26,9 @@ typedef struct message {
 
 /**
  * --------------------------------- PROBLEM 1 --------------------------------------
- * 
+ */
+
+/**
  * Convert the given buffer into an array of PACKETs and returns the array.  The 
  * value of (*count) should be updated so that it contains the number of packets in 
  * the array
@@ -41,35 +43,35 @@ packet_t *packetize(char *buffer, int length, int *count) {
     /* ----  FIXME  ---- */ 
     packet_t *packets;
 
-    *count = length / MAX_PAYLOAD_LENGTH;
+    int packet_count = length / MAX_PAYLOAD_LENGTH;
     // temporarily max length
     int last_packet_length = MAX_PAYLOAD_LENGTH;
     if (0 != (length % MAX_PAYLOAD_LENGTH)){
         last_packet_length = length % MAX_PAYLOAD_LENGTH; 
-        (*count)++;
+        packet_count += 1;
     }
-    packets = (packet_t*) malloc(sizeof(packet_t) * (size_t) *count);
+    packets = (packet_t*) malloc(sizeof(packet_t) * (size_t) packet_count);
     if (NULL == packets){
         exit(EXIT_FAILURE);
     }
     int i = 0;
-    while(i < *count - 1){
+    for(;i < packet_count - 1; i++){
         packets[i].type = DATA;
         packets[i].payload_length = MAX_PAYLOAD_LENGTH;
         for (int j = 0; j < MAX_PAYLOAD_LENGTH; j++){
             packets[i].payload[j] = buffer[i * MAX_PAYLOAD_LENGTH + j];
         }
         packets[i].checksum = checksum(packets[i].payload, packets[i].payload_length);
-        buffer += MAX_PAYLOAD_LENGTH;
-        i++;
     }
-    // i at this point would be (*count) - 1
+    // i at this point would be packet_count - 1
+    i = packet_count - 1;
     packets[i].type = LAST_DATA;
     packets[i].payload_length =  last_packet_length;
     for (int j = 0; j < last_packet_length; j++){
         packets[i].payload[j] = buffer[i * MAX_PAYLOAD_LENGTH + j];
     }
     packets[i].checksum = checksum(packets[i].payload, packets[i].payload_length);
+    *count = packet_count;
     return packets;
 }
 
@@ -91,7 +93,6 @@ packet_t *packetize(char *buffer, int length, int *count) {
  * @returns calcuated checksum
  */
 int checksum(char *buffer, int length) {
-
     /* ----  FIXME  ---- */
     int sum = 0;
     int i = 0;
@@ -103,7 +104,7 @@ int checksum(char *buffer, int length) {
                 sum += buffer[i] * 3;
                 break;
             case 2:
-            case 3:
+            case 3: 
                 sum += buffer[i] / 3;
                 break;
             default:
@@ -213,7 +214,8 @@ static void *rtp_recv_thread(void *void_ptr) {
             * 1. Add message to the received queue.
             * 2. Signal the client thread that a message has been received.
             */
-            if (NULL == (message = malloc(sizeof(message_t)))){
+            message = malloc(sizeof(message_t));
+            if (NULL == message){
                 exit(EXIT_FAILURE);
             }
             message->buffer = buffer;
@@ -246,28 +248,21 @@ static void *rtp_send_thread(void *void_ptr) {
         while (queue_size(&connection->send_queue) == 0 && connection->alive == 1) {
             pthread_cond_wait(&connection->send_cond, &connection->send_mutex);
         }
-
         if (connection->alive == 0) {
-            pthread_mutex_lock(&connection->send_mutex);
+            pthread_mutex_unlock(&connection->send_mutex);
             break;
         }
-
         message = queue_extract(&connection->send_queue);
-
         pthread_mutex_unlock(&connection->send_mutex);
-
         /* Packetize the message and send it */
         packet_array = packetize(message->buffer, message->length, &array_length);
-
         for (i = 0; i < array_length; i++) {
-
             /* Start sending the packetized messages */
             if (net_send_packet(connection->net_connection_handle, &packet_array[i]) <= 0) {
                 /* remote side has disconnected */
                 connection->alive = 0;
                 break;
             }
-
             /*  ----FIX ME: Part II-D ---- 
              * 
              *  1. wait for the recv thread to notify you of when a NACK or
