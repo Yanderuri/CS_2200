@@ -17,8 +17,11 @@ typedef struct rtp_connection {
     pthread_t recv_thread;
     pthread_t send_thread;
 
-    /* FIX ME - insert any needed members*/
-    int ack;
+    /*
+    1 == ACK
+    2 == NACK
+    */
+    unsigned int ack;
 
     pthread_cond_t ack_cond;
     pthread_mutex_t ack_mutex;
