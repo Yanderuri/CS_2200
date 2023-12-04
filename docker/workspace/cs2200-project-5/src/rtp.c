@@ -191,10 +191,10 @@ static void *rtp_recv_thread(void *void_ptr) {
             else if (ACK == packet.type || NACK == packet.type){
                 pthread_mutex_lock(&connection->recv_mutex);
                 if (ACK == packet.type){
-                    connection->ack = 1;
+                    connection->nack_ack = 1;
                 }
                 else if (NACK == packet.type){
-                    connection->ack = 2;
+                    connection->nack_ack = 0;
                 }
                 pthread_cond_signal(&connection->ack_cond);
                 pthread_mutex_unlock(&connection->recv_mutex);
@@ -274,14 +274,14 @@ static void *rtp_send_thread(void *void_ptr) {
              *  4. If it was a NACK, resend the last packet
              */
             pthread_mutex_lock(&(connection->ack_mutex));
-            while (connection->ack == 0 && 1 == connection->ack){
-                pthread_cond_wait(&connection->ack_cond, &connection->ack_mutex);
+            while (0 != connection->nack_ack && 1 != connection->nack_ack){
+                pthread_cond_wait(&(connection->ack_cond), &(connection->ack_mutex));
             }
             // decrease i and resend package until ACK is received
-            if (connection -> ack == 2){
+            if (connection -> nack_ack == 0){
                 i--;
             }
-            connection -> ack = 0;
+            connection -> nack_ack = 420;
             pthread_mutex_unlock(&(connection->ack_mutex));
         }
 

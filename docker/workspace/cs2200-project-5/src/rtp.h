@@ -18,10 +18,10 @@ typedef struct rtp_connection {
     pthread_t send_thread;
 
     /*
+    0 == NACK
     1 == ACK
-    2 == NACK
     */
-    unsigned int ack;
+    short nack_ack;
 
     pthread_cond_t ack_cond;
     pthread_mutex_t ack_mutex;
