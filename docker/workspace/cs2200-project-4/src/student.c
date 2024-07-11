@@ -75,10 +75,10 @@ static int time_slice;
 
 
 /*
-    Vy from her past self to future self
-    Read this shit: 
-        https://linux.die.net/man/3/pthread_mutex_lock
-        https://linux.die.net/man/3/pthread_cond_wait
+   Vy from her past self to future self
+   Read this shit: 
+https://linux.die.net/man/3/pthread_mutex_lock
+https://linux.die.net/man/3/pthread_cond_wait
 */
 
 /** ------------------------Problem 3-----------------------------------
@@ -95,8 +95,8 @@ static int time_slice;
  * 
  */
 extern double priority_with_age(unsigned int current_time, pcb_t *process) {
-    /* FIX ME */
-    return process -> priority + (current_time - process -> enqueue_time) * age_weight;
+	/* FIX ME */
+	return process -> priority + (current_time - process -> enqueue_time) * age_weight;
 }
 
 /** ------------------------Problem 0 & 3-----------------------------------
@@ -116,75 +116,84 @@ extern double priority_with_age(unsigned int current_time, pcb_t *process) {
  */
 void enqueue(queue_t *queue, pcb_t *process)
 {
-    /* FIX ME */
-    #if DEBUG_PRINTFS
-    printf("enqueue started\n");
-    #endif
-    /* First come first serve only*/
-    if (scheduler_algorithm == PA){
-        pthread_mutex_lock(&queue_mutex);
-        if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
-            pthread_mutex_unlock(&queue_mutex);
-            return;
-        }
-        process->enqueue_time = get_current_time();
-        if (queue->head == NULL){
-            queue->tail = process;
-            queue->head = queue->tail;
-            queue->tail->next = NULL;
-        }
-        else{
-            pcb_t *forward, *previous;
-            forward = queue->head;
-            previous = queue->head;
-            bool inserted = false;
-            double currentPriority = priority_with_age(get_current_time(), process);
-            while(forward != NULL){
-                if (currentPriority >= priority_with_age(get_current_time(), forward)){
-                    if (forward == queue->head){
-                        process->next = queue->head;
-                        queue->head = process;
-                    }
-                    else{
-                        previous->next = process;
-                        process->next = forward;
-                    }
-                    inserted = true;
-                    break;
-                }
-                previous = forward;
-                forward = forward->next;
-            }
-            if (!inserted){
-                queue->tail->next = process;
-                process -> next = NULL;
-                queue->tail = queue->tail->next;
-            }
-        }
-        pthread_cond_signal(&queue_not_empty);
-        pthread_mutex_unlock(&queue_mutex);
-    }
-    else{
-        pthread_mutex_lock(&queue_mutex);
-        if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
-            pthread_mutex_unlock(&queue_mutex);
-            return;
-        }
-        if (queue->head == NULL && queue->tail == NULL) {
-            queue->tail = process;
-            queue->head = queue->tail;
-            queue->tail->next = NULL;
-        } else {
-            queue->tail->next = process;
-            queue->tail = queue->tail->next;
-            queue->tail->next = NULL;
-        }
-        pthread_cond_signal(&queue_not_empty);
-        pthread_mutex_unlock(&queue_mutex);
-    }
-    #if DEBUG_PRINTFS
-    printf("enqueue finished\n");
-    #endif
+	/* FIX ME */
+#if DEBUG_PRINTFS
+	printf("enqueue started\n");
+#endif
+	/* First come first serve only*/
+	pthread_mutex_lock(&queue_mutex);
+	if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
+		pthread_mutex_unlock(&queue_mutex);
+		return;
+	}
+	if (queue->head == NULL){
+		queue->tail = process;
+		queue->head = queue->tail;
+		queue->tail->next = NULL;
+	}
+	if (scheduler_algorithm == PA){
+		pcb_t *forward, *previous;
+		forward = queue->head;
+		previous = queue->head;
+		bool inserted = false;
+		double currentPriority = priority_with_age(get_current_time(), process);
+		while(forward != NULL){
+			if (currentPriority >= priority_with_age(get_current_time(), forward)){
+				if (forward == queue->head){
+					process->next = queue->head;
+					queue->head = process;
+				}
+				else{
+					previous->next = process;
+					process->next = forward;
+				}
+				inserted = true;
+				break;
+			}
+			previous = forward;
+			forward = forward->next;
+		}
+		if (!inserted){
+			queue->tail->next = process;
+			process -> next = NULL;
+			queue->tail = queue->tail->next;
+		}
+	}
+	else if (scheduler_algorithm == FCFS){
+		pcb_t * forward = queue->head, *previous = queue->head;
+		bool inserted = false;
+		double currentTime = process -> arrival_time;
+		while (forward != NULL){
+			if (currentTime < forward -> arrival_time){
+				if (forward == queue->head){
+					process->next = queue->head;
+					queue->head = process;
+				}
+				else{
+					previous->next = process;
+					process->next = forward;
+				}
+				inserted = true;
+				break;
+			}
+			previous = forward;
+			forward = forward -> next;
+		}
+		if (!inserted){
+			queue -> tail -> next = process;
+			process -> next = NULL;
+			queue -> tail = queue -> tail -> next;
+		}
+	}
+	else{
+
+		queue->tail->next = process;
+		queue->tail = queue->tail->next;
+		queue->tail->next = NULL;
+	}
+#if DEBUG_PRINTFS
+	printf("enqueue finished\n");
+#endif
 }
 
 /**
@@ -201,34 +210,34 @@ void enqueue(queue_t *queue, pcb_t *process)
  */
 pcb_t *dequeue(queue_t *queue)
 {
-    #if DEBUG_PRINTFS
-    printf("dequeue started\n");
-    #endif
+#if DEBUG_PRINTFS
+	printf("dequeue started\n");
+#endif
 
-    pcb_t *process;
-    pthread_mutex_lock(&queue_mutex);
-    if (is_empty(queue)){
-        pthread_mutex_unlock(&queue_mutex);
-        return 0;
-    }
-    process = queue->head;
-    if (queue->head == queue->tail) {
-        queue->head = NULL;
-        queue->tail = NULL;
-    }
-    else{
-        // forgor the else lmao
-        queue->head = queue->head->next;
-    }
-    pthread_mutex_unlock(&queue_mutex);
-    // a running process should never have a next pointer
-    if (process != NULL){
-        process->next = NULL;
-    }
-    return process;
-    #if DEBUG_PRINTFS
-    printf("dequeue ended\n");
-    #endif
+	pcb_t *process;
+	pthread_mutex_lock(&queue_mutex);
+	if (is_empty(queue)){
+		pthread_mutex_unlock(&queue_mutex);
+		return 0;
+	}
+	process = queue->head;
+	if (queue->head == queue->tail) {
+		queue->head = NULL;
+		queue->tail = NULL;
+	}
+	else{
+		// forgor the else lmao
+		queue->head = queue->head->next;
+	}
+	pthread_mutex_unlock(&queue_mutex);
+	// a running process should never have a next pointer
+	if (process != NULL){
+		process->next = NULL;
+	}
+	return process;
+#if DEBUG_PRINTFS
+	printf("dequeue ended\n");
+#endif
 }
 
 /** ------------------------Problem 0-----------------------------------
@@ -243,9 +252,9 @@ pcb_t *dequeue(queue_t *queue)
  */
 bool is_empty(queue_t *queue)
 {
-    // is this mutex really needed?
-    // can't mutex then return since mutex won't be unlocked
-    return queue->head == NULL;
+	// is this mutex really needed?
+	// can't mutex then return since mutex won't be unlocked
+	return queue->head == NULL;
 }
 
 /** ------------------------Problem 1B-----------------------------------
@@ -259,17 +268,17 @@ bool is_empty(queue_t *queue)
  */
 static void schedule(unsigned int cpu_id)
 {
-    #if DEBUG_PRINTFS
-    printf("schedule(%d)\n", cpu_id);
-    #endif
-    pcb_t *process = dequeue(rq);
-    if (process != NULL) {
-        process->state = PROCESS_RUNNING;
-    }
-    pthread_mutex_lock(&current_mutex);
-    current[cpu_id] = process;
-    pthread_mutex_unlock(&current_mutex);
-    context_switch(cpu_id, process, time_slice);
+#if DEBUG_PRINTFS
+	printf("schedule(%d)\n", cpu_id);
+#endif
+	pcb_t *process = dequeue(rq);
+	if (process != NULL) {
+		process->state = PROCESS_RUNNING;
+	}
+	pthread_mutex_lock(&current_mutex);
+	current[cpu_id] = process;
+	pthread_mutex_unlock(&current_mutex);
+	context_switch(cpu_id, process, time_slice);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -283,15 +292,15 @@ static void schedule(unsigned int cpu_id)
  */
 extern void idle(unsigned int cpu_id)
 {
-    #if DEBUG_PRINTFS
-    printf("cpu %d is idle\n", cpu_id);
-    #endif
-    pthread_mutex_lock(&queue_mutex);
-    while(is_empty(rq)) {
-        pthread_cond_wait(&queue_not_empty, &queue_mutex);
-    }
-    pthread_mutex_unlock(&queue_mutex);
-    schedule(cpu_id);
+#if DEBUG_PRINTFS
+	printf("cpu %d is idle\n", cpu_id);
+#endif
+	pthread_mutex_lock(&queue_mutex);
+	while(is_empty(rq)) {
+		pthread_cond_wait(&queue_not_empty, &queue_mutex);
+	}
+	pthread_mutex_unlock(&queue_mutex);
+	schedule(cpu_id);
 }
 
 /** ------------------------Problem 2 & 3-----------------------------------
@@ -307,17 +316,20 @@ extern void idle(unsigned int cpu_id)
  */
 extern void preempt(unsigned int cpu_id)
 {
-    /* FIX ME */
-    #if DEBUG_PRINTFS
-    printf("cpu %d preempt\n", cpu_id);
-    #endif 
-    // i should only need to lock it here right?
-    pthread_mutex_lock(&current_mutex);
-    pcb_t *process = current[cpu_id];
-    pthread_mutex_unlock(&current_mutex);
-    process->state = PROCESS_READY;
-    enqueue(rq, process);
-    schedule(cpu_id);
+	/* FIX ME */
+#if DEBUG_PRINTFS
+	printf("cpu %d preempt\n", cpu_id);
+#endif 
+	// i should only need to lock it here right?
+	pthread_mutex_lock(&current_mutex);
+
+	pcb_t *process = current[cpu_id];
+	current[cpu_id] -> state = PROCESS_READY;
+
+	pthread_mutex_unlock(&current_mutex);
+	/*process->state = PROCESS_READY;*/
+	enqueue(rq, process);
+	schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -330,15 +342,18 @@ extern void preempt(unsigned int cpu_id)
  */
 extern void yield(unsigned int cpu_id)
 {
-    #if DEBUG_PRINTFS
-    printf("cpu %d is yielding\n", cpu_id);
-    #endif
-    /* FIX ME */
-    pthread_mutex_lock(&current_mutex);
-    pcb_t *process = current[cpu_id];
-    pthread_mutex_unlock(&current_mutex);
-    process->state = PROCESS_WAITING;
-    schedule(cpu_id);
+#if DEBUG_PRINTFS
+	printf("cpu %d is yielding\n", cpu_id);
+#endif
+	/* FIX ME */
+	pthread_mutex_lock(&current_mutex);
+
+	/*pcb_t *process = current[cpu_id];*/
+	current[cpu_id] -> state = PROCESS_WAITING;
+
+	pthread_mutex_unlock(&current_mutex);
+	/*process->state = PROCESS_WAITING;*/
+	schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A-----------------------------------
@@ -350,20 +365,20 @@ extern void yield(unsigned int cpu_id)
  */
 extern void terminate(unsigned int cpu_id)
 {
-    #if DEBUG_PRINTFS
-    printf("cpu %d is terminating\n", cpu_id);
-    #endif
-    /* FIX ME */
-    pthread_mutex_lock(&current_mutex);
-    pcb_t *process = current[cpu_id];
-    current[cpu_id] = 0;
-    pthread_mutex_unlock(&current_mutex);
-    if (process != NULL){
-        process->state = PROCESS_TERMINATED;
-    }
-    // I FORGOT TO RESCHEDULE
-    // :skull:
-    schedule(cpu_id);
+#if DEBUG_PRINTFS
+	printf("cpu %d is terminating\n", cpu_id);
+#endif
+	/* FIX ME */
+	pthread_mutex_lock(&current_mutex);
+	pcb_t *process = current[cpu_id];
+	current[cpu_id] = 0;
+	pthread_mutex_unlock(&current_mutex);
+	if (process != NULL){
+		process->state = PROCESS_TERMINATED;
+	}
+	// I FORGOT TO RESCHEDULE
+	// :skull:
+	schedule(cpu_id);
 }
 
 /**  ------------------------Problem 1A & 3---------------------------------
@@ -380,38 +395,38 @@ extern void terminate(unsigned int cpu_id)
  */
 extern void wake_up(pcb_t *process)
 {
-    /* FIX ME */
-    // does FCFS need to mutex lock?
-    if (process != 0 && process->state != PROCESS_TERMINATED){
-        process->state = PROCESS_READY;
-        enqueue(rq, process);
-    }
-    if (scheduler_algorithm == PA){
-        // finding the processor with the lowest priority
-        int lowestPriorityFound = INT_MAX;
-        unsigned int i = 0, cpuBeingScheduled = 0;
-        pthread_mutex_lock(&current_mutex);
-        while (i < cpu_count){
-            if (current[i] == NULL){
-                pthread_mutex_unlock(&current_mutex);
-                return;
-            }
-            else{
-                if (priority_with_age(get_current_time(), current[i]) < lowestPriorityFound){
-                    #if DEBUG_PRINTFS
-                    printf("found a lower priority i: %d\n", i);
-                    #endif
-                    lowestPriorityFound = priority_with_age(get_current_time(), current[i]);
-                    cpuBeingScheduled = i;
-                }
-            }
-            i++;
-        }
-        pthread_mutex_unlock(&current_mutex);
-        if (lowestPriorityFound < priority_with_age(get_current_time(), process)){
-            force_preempt(cpuBeingScheduled);
-        }
-    }
+	/* FIX ME */
+	// does FCFS need to mutex lock?
+	if (process != 0 && process->state != PROCESS_TERMINATED){
+		process->state = PROCESS_READY;
+		enqueue(rq, process);
+	}
+	if (scheduler_algorithm == PA){
+		// finding the processor with the lowest priority
+		int lowestPriorityFound = INT_MAX;
+		unsigned int i = 0, cpuBeingScheduled = 0;
+		pthread_mutex_lock(&current_mutex);
+		while (i < cpu_count){
+			if (current[i] == NULL){
+				pthread_mutex_unlock(&current_mutex);
+				return;
+			}
+			else{
+				if (priority_with_age(get_current_time(), current[i]) < lowestPriorityFound){
+#if DEBUG_PRINTFS
+					printf("found a lower priority i: %d\n", i);
+#endif
+					lowestPriorityFound = priority_with_age(get_current_time(), current[i]);
+					cpuBeingScheduled = i;
+				}
+			}
+			i++;
+		}
+		pthread_mutex_unlock(&current_mutex);
+		if (lowestPriorityFound < priority_with_age(get_current_time(), process)){
+			force_preempt(cpuBeingScheduled);
+		}
+	}
 }
 
 /**
@@ -425,64 +440,64 @@ extern void wake_up(pcb_t *process)
  */
 int main(int argc, char *argv[])
 {    /* FIX ME */
-    scheduler_algorithm = FCFS;
-    age_weight = 0;
-    time_slice = 0; // -1 for FCFS
+	scheduler_algorithm = FCFS;
+	age_weight = 0;
+	time_slice = 0; // -1 for FCFS
 
-    if (argc < 2 || argc > 4)
-    {
-        fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
-                        "Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
-                        "    Default : FCFS Scheduler\n"
-                        "         -r : Round-Robin Scheduler\n1\n"
-                        "         -p : Priority Aging Scheduler\n");
-        return -1;
-    }
-    cpu_count = strtoul(argv[1], NULL, 0);
-    #if DEBUG_PRINTFS
-    printf("cpu count: %d\n", cpu_count);
-    #endif
-    char opt = getopt(argc, argv, "rp");
-    switch(opt){
-        case 'r':
-            scheduler_algorithm = RR;
-            time_slice = strtoul(argv[3], NULL, 10);
-            age_weight = 0;
-            #if DEBUG_PRINTFS
-            printf("RR selected\n");
-            printf("time slice %d\n", time_slice);
-            #endif
-            break;
-        case 'p':
-            scheduler_algorithm = PA;
-            time_slice = -1;
-            age_weight = strtoul(argv[3], NULL, 10);
+	if (argc < 2 || argc > 4)
+	{
+		fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
+				"Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
+				"    Default : FCFS Scheduler\n"
+				"         -r : Round-Robin Scheduler\n1\n"
+				"         -p : Priority Aging Scheduler\n");
+		return -1;
+	}
+	cpu_count = strtoul(argv[1], NULL, 0);
+#if DEBUG_PRINTFS
+	printf("cpu count: %d\n", cpu_count);
+#endif
+	char opt = getopt(argc, argv, "rp");
+	switch(opt){
+		case 'r':
+			scheduler_algorithm = RR;
+			time_slice = strtoul(argv[3], NULL, 10);
+			age_weight = 0;
+#if DEBUG_PRINTFS
+			printf("RR selected\n");
+			printf("time slice %d\n", time_slice);
+#endif
+			break;
+		case 'p':
+			scheduler_algorithm = PA;
+			time_slice = -1;
+			age_weight = strtoul(argv[3], NULL, 10);
 
-            #if DEBUG_PRINTFS
-            printf("PA selected\n");
-            printf("age weight %d\n", age_weight);
-            #endif
-            break;
-        default:
-            scheduler_algorithm = FCFS;
-            time_slice = -1;
-            age_weight = 0;
-            break;
-    }
+#if DEBUG_PRINTFS
+			printf("PA selected\n");
+			printf("age weight %d\n", age_weight);
+#endif
+			break;
+		default:
+			scheduler_algorithm = FCFS;
+			time_slice = -1;
+			age_weight = 0;
+			break;
+	}
 
-   /* Allocate the current[] array and its mutex */
-    current = malloc(sizeof(pcb_t *) * cpu_count);
-    assert(current != NULL);
-    pthread_mutex_init(&current_mutex, NULL);
-    pthread_mutex_init(&queue_mutex, NULL);
-    pthread_cond_init(&queue_not_empty, NULL);
-    rq = (queue_t *) malloc(sizeof(queue_t));
-    assert(rq != NULL);
+	/* Allocate the current[] array and its mutex */
+	current = malloc(sizeof(pcb_t *) * cpu_count);
+	assert(current != NULL);
+	pthread_mutex_init(&current_mutex, NULL);
+	pthread_mutex_init(&queue_mutex, NULL);
+	pthread_cond_init(&queue_not_empty, NULL);
+	rq = (queue_t *) malloc(sizeof(queue_t));
+	assert(rq != NULL);
 
-    /* Start the simulator in the library */
-    start_simulator(cpu_count);
+	/* Start the simulator in the library */
+	start_simulator(cpu_count);
 
-    return 0;
+	return 0;
 }
 
 #pragma GCC diagnostic pop
