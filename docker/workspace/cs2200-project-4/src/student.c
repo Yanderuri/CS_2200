@@ -131,66 +131,78 @@ void enqueue(queue_t *queue, pcb_t *process)
 		queue->head = queue->tail;
 		queue->tail->next = NULL;
 	}
-	if (scheduler_algorithm == PA){
-		pcb_t *forward, *previous;
-		forward = queue->head;
-		previous = queue->head;
-		bool inserted = false;
-		double currentPriority = priority_with_age(get_current_time(), process);
-		while(forward != NULL){
-			if (currentPriority >= priority_with_age(get_current_time(), forward)){
-				if (forward == queue->head){
-					process->next = queue->head;
-					queue->head = process;
-				}
-				else{
-					previous->next = process;
-					process->next = forward;
-				}
-				inserted = true;
-				break;
+	else {
+		if (scheduler_algorithm == PA){
+			process->enqueue_time = get_current_time();
+			if (queue->head == NULL){
+				queue->tail = process;
+				queue->head = queue->tail;
+				queue->tail->next = NULL;
 			}
-			previous = forward;
-			forward = forward->next;
-		}
-		if (!inserted){
-			queue->tail->next = process;
-			process -> next = NULL;
-			queue->tail = queue->tail->next;
-		}
-	}
-	else if (scheduler_algorithm == FCFS){
-		pcb_t * forward = queue->head, *previous = queue->head;
-		bool inserted = false;
-		double currentTime = process -> arrival_time;
-		while (forward != NULL){
-			if (currentTime < forward -> arrival_time){
-				if (forward == queue->head){
-					process->next = queue->head;
-					queue->head = process;
+			else{
+				pcb_t *forward, *previous;
+				forward = queue->head;
+				previous = queue->head;
+				bool inserted = false;
+				double currentPriority = priority_with_age(get_current_time(), process);
+				while(forward != NULL){
+					if (currentPriority >= priority_with_age(get_current_time(), forward)){
+						if (forward == queue->head){
+							process->next = queue->head;
+							queue->head = process;
+						}
+						else{
+							previous->next = process;
+							process->next = forward;
+						}
+						inserted = true;
+						break;
+					}
+					previous = forward;
+					forward = forward->next;
 				}
-				else{
-					previous->next = process;
-					process->next = forward;
+				if (!inserted){
+					queue->tail->next = process;
+					process -> next = NULL;
+					queue->tail = queue->tail->next;
 				}
-				inserted = true;
-				break;
 			}
-			previous = forward;
-			forward = forward -> next;
 		}
-		if (!inserted){
-			queue -> tail -> next = process;
-			process -> next = NULL;
-			queue -> tail = queue -> tail -> next;
+		else if (scheduler_algorithm == FCFS){
+			pcb_t * forward = queue->head, *previous = queue->head;
+			bool inserted = false;
+			double currentTime = process -> arrival_time;
+			while (forward != NULL){
+				if (currentTime < forward -> arrival_time){
+					if (forward == queue->head){
+						process->next = queue->head;
+						queue->head = process;
+					}
+					else{
+						previous->next = process;
+						process->next = forward;
+					}
+					inserted = true;
+					break;
+				}
+				previous = forward;
+				forward = forward -> next;
+			}
+			if (!inserted){
+				queue -> tail -> next = process;
+				process -> next = NULL;
+				queue -> tail = queue -> tail -> next;
+			}
 		}
-	}
-	else{
+		else{
 
-		queue->tail->next = process;
-		queue->tail = queue->tail->next;
-		queue->tail->next = NULL;
+			queue->tail->next = process;
+			queue->tail = queue->tail->next;
+			queue->tail->next = NULL;
+		}
 	}
+	pthread_cond_signal(&queue_not_empty);
+	pthread_mutex_unlock(&queue_mutex);
 #if DEBUG_PRINTFS
 	printf("enqueue finished\n");
 #endif
@@ -214,11 +226,11 @@ pcb_t *dequeue(queue_t *queue)
 	printf("dequeue started\n");
 #endif
 
-	pcb_t *process;
+	pcb_t *process = 0;
 	pthread_mutex_lock(&queue_mutex);
 	if (is_empty(queue)){
 		pthread_mutex_unlock(&queue_mutex);
-		return 0;
+		return process;
 	}
 	process = queue->head;
 	if (queue->head == queue->tail) {
@@ -325,6 +337,7 @@ extern void preempt(unsigned int cpu_id)
 
 	pcb_t *process = current[cpu_id];
 	current[cpu_id] -> state = PROCESS_READY;
+	current[cpu_id] = 0;
 
 	pthread_mutex_unlock(&current_mutex);
 	/*process->state = PROCESS_READY;*/
@@ -350,6 +363,7 @@ extern void yield(unsigned int cpu_id)
 
 	/*pcb_t *process = current[cpu_id];*/
 	current[cpu_id] -> state = PROCESS_WAITING;
+	current[cpu_id] = 0;
 
 	pthread_mutex_unlock(&current_mutex);
 	/*process->state = PROCESS_WAITING;*/
