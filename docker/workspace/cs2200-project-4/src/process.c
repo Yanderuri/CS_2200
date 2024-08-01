@@ -213,12 +213,14 @@ static op_t pid7_ops[] = {
     {OP_TERMINATE, 0}};
 
 pcb_t processes[PROCESS_COUNT] = {
-    // {pid, name, time remaining, priority, state, *pc, *next, enqueue_time}
-    {0, "Iapache", 2, 1, PROCESS_NEW, pid0_ops, NULL, 0},
-    {1, "Ibash", 3, 2, PROCESS_NEW, pid1_ops, NULL, 0},
-    {2, "Imozilla", 1, 0, PROCESS_NEW, pid2_ops, NULL, 0},
-    {3, "Ccpu", 9, 3, PROCESS_NEW, pid3_ops, NULL, 0},
-    {4, "Cgcc", 10, 4, PROCESS_NEW, pid4_ops, NULL, 0},
-    {5, "Cspice", 9, 7, PROCESS_NEW, pid5_ops, NULL, 0},
-    {6, "Cmysql", 6, 6, PROCESS_NEW, pid6_ops, NULL, 0},
-    {7, "Csim", 6, 5, PROCESS_NEW, pid7_ops, NULL, 0}};
+    // {pid, name, time remaining, priority, state, *pc, *next, enqueue_time, arrival_time}
+    {0, "Iapache", 2, 1, PROCESS_NEW, pid0_ops, NULL, 0, 0},
+    {1, "Ibash", 3, 2, PROCESS_NEW, pid1_ops, NULL, 0, 10},
+    {2, "Imozilla", 1, 0, PROCESS_NEW, pid2_ops, NULL, 0, 20},
+    {3, "Ccpu", 9, 3, PROCESS_NEW, pid3_ops, NULL, 0, 30},
+    {4, "Cgcc", 10, 4, PROCESS_NEW, pid4_ops, NULL, 0, 40},
+    {5, "Cspice", 9, 7, PROCESS_NEW, pid5_ops, NULL, 0, 50},
+    {6, "Cmysql", 6, 6, PROCESS_NEW, pid6_ops, NULL, 0, 60},
+    {7, "Csim", 6, 5, PROCESS_NEW, pid7_ops, NULL, 0, 70}
+    
+    };

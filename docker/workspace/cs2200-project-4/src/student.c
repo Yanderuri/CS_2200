@@ -7,13 +7,17 @@
  */
 
 #include <assert.h>
+#include <bits/getopt_core.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <argp.h>
 
 #include "student.h"
+#include "os-sim.h"
+#include "process.h"
 #include <unistd.h>
 #include <limits.h>
 
@@ -29,8 +33,10 @@ extern void yield(unsigned int cpu_id);
 extern void terminate(unsigned int cpu_id);
 extern void wake_up(pcb_t *process);
 
-static unsigned int cpu_count;
 
+void queue_checker(queue_t* ready_queue);
+
+static unsigned int cpu_count;
 /*
  * current[] is an array of pointers to the currently running processes.
  * There is one array element corresponding to each CPU in the simulation.
@@ -73,7 +79,7 @@ static unsigned int cpu_count;
 static unsigned int age_weight;
 static int time_slice;
 
-
+static bool corruption_checker = false;
 /*
    Vy from her past self to future self
    Read this shit: 
@@ -120,55 +126,54 @@ void enqueue(queue_t *queue, pcb_t *process)
 #if DEBUG_PRINTFS
 	printf("enqueue started\n");
 #endif
-	/* First come first serve only*/
 	pthread_mutex_lock(&queue_mutex);
 	if (process == 0 || (process != 0 && process->state == PROCESS_TERMINATED)){
 		pthread_mutex_unlock(&queue_mutex);
 		return;
 	}
-	if (queue->head == NULL){
-		queue->tail = process;
-		queue->head = queue->tail;
-		queue->tail->next = NULL;
-	}
-	else {
-		if (scheduler_algorithm == PA){
-			process->enqueue_time = get_current_time();
-			if (queue->head == NULL){
-				queue->tail = process;
-				queue->head = queue->tail;
-				queue->tail->next = NULL;
-			}
-			else{
-				pcb_t *forward, *previous;
-				forward = queue->head;
-				previous = queue->head;
-				bool inserted = false;
-				double currentPriority = priority_with_age(get_current_time(), process);
-				while(forward != NULL){
-					if (currentPriority >= priority_with_age(get_current_time(), forward)){
-						if (forward == queue->head){
-							process->next = queue->head;
-							queue->head = process;
-						}
-						else{
-							previous->next = process;
-							process->next = forward;
-						}
-						inserted = true;
-						break;
+	if (scheduler_algorithm == PA){
+		process->enqueue_time = get_current_time();
+		if (queue->head == NULL){
+			queue->tail = process;
+			queue->head = queue->tail;
+			queue->tail->next = NULL;
+		}
+		else{
+			pcb_t *forward, *previous;
+			forward = queue->head;
+			previous = queue->head;
+			bool inserted = false;
+			double currentPriority = priority_with_age(get_current_time(), process);
+			while(forward != NULL){
+				if (currentPriority >= priority_with_age(get_current_time(), forward)){
+					if (forward == queue->head){
+						process->next = queue->head;
+						queue->head = process;
 					}
-					previous = forward;
-					forward = forward->next;
+					else{
+						previous->next = process;
+						process->next = forward;
+					}
+					inserted = true;
+					break;
 				}
-				if (!inserted){
-					queue->tail->next = process;
-					process -> next = NULL;
-					queue->tail = queue->tail->next;
-				}
+				previous = forward;
+				forward = forward->next;
+			}
+			if (!inserted){
+				queue->tail->next = process;
+				process -> next = NULL;
+				queue->tail = queue->tail->next;
 			}
 		}
-		else if (scheduler_algorithm == FCFS){
+	}
+	else if (scheduler_algorithm == FCFS){
+		if (queue->head == NULL){
+			queue->tail = process;
+			queue->head = queue->tail;
+			queue->tail->next = NULL;
+		}
+		else{
 			pcb_t * forward = queue->head, *previous = queue->head;
 			bool inserted = false;
 			double currentTime = process -> arrival_time;
@@ -194,12 +199,20 @@ void enqueue(queue_t *queue, pcb_t *process)
 				queue -> tail = queue -> tail -> next;
 			}
 		}
-		else{
-
+	}
+	else{
+		if (queue->head == NULL && queue->tail == NULL) {
+			queue->tail = process;
+			queue->head = queue->tail;
+			queue->tail->next = NULL;
+		} else {
 			queue->tail->next = process;
 			queue->tail = queue->tail->next;
 			queue->tail->next = NULL;
 		}
+	}
+	if (corruption_checker){
+		queue_checker(rq);
 	}
 	pthread_cond_signal(&queue_not_empty);
 	pthread_mutex_unlock(&queue_mutex);
@@ -226,11 +239,11 @@ pcb_t *dequeue(queue_t *queue)
 	printf("dequeue started\n");
 #endif
 
-	pcb_t *process = 0;
+	pcb_t *process;
 	pthread_mutex_lock(&queue_mutex);
 	if (is_empty(queue)){
 		pthread_mutex_unlock(&queue_mutex);
-		return process;
+		return 0;
 	}
 	process = queue->head;
 	if (queue->head == queue->tail) {
@@ -241,15 +254,79 @@ pcb_t *dequeue(queue_t *queue)
 		// forgor the else lmao
 		queue->head = queue->head->next;
 	}
+	if (corruption_checker){
+		queue_checker(rq);
+	}
 	pthread_mutex_unlock(&queue_mutex);
 	// a running process should never have a next pointer
 	if (process != NULL){
 		process->next = NULL;
 	}
-	return process;
 #if DEBUG_PRINTFS
 	printf("dequeue ended\n");
 #endif
+	return process;
+}
+/*
+ * This corruption doesn't guarantee your ready queue linked list is perfect,
+ * just help you dodge some pitfalls
+ * - Vy Summer 2024 :3
+ */
+void queue_checker(queue_t* ready_queue){
+	int lock_result = pthread_mutex_trylock(&queue_mutex);
+	if (lock_result == 0){
+		// https://linux.die.net/man/3/pthread_mutex_trylock
+		fprintf(stderr, "queue_checker should be called after enqueue/dequeue completed \
+				but before unlocking, however, queue_checker has re-acquired the lock\n");
+		bool condition = ready_queue->head == NULL && ready_queue->tail != NULL;
+		if (condition){
+			fprintf(stderr, "Ready queue has a tail without a head\n");
+			exit(1);
+		}
+		condition = ready_queue->head != NULL && ready_queue->tail == NULL;
+		if (condition){
+			fprintf(stderr, "Ready queue has a head without a tail\n");
+			exit(1);
+		}
+		// Duplication checker
+		// If anybody is reading these,
+		// how do you find duplicates in a linkedlist in O(n)
+		// without knowing the length and hashing collisions?
+		pcb_t * curr = ready_queue->head;
+		int length = 0;
+		while(curr != NULL){
+			condition = (curr -> state != PROCESS_READY);
+			if (condition){
+				fprintf(stderr, "Found process in ready queue that's not ready\n");
+				exit(1);
+			}
+			length++;
+			curr = curr -> next;
+		}
+		unsigned int * process_ids = malloc(sizeof(unsigned int) * (size_t) length);
+		assert(process_ids != 0);
+		curr = ready_queue -> head;
+		for(int i = 0; i < length && curr != NULL; curr = curr->next){
+			process_ids[i++] = curr->pid;
+		}
+		for(int i = 0; i < length; i++){
+			for(int j = 0; j < length; j++){
+				condition = process_ids[i] == process_ids[j] && i != j;
+				if (condition){
+					fprintf(stderr, "Duplicated process found in ready queue");
+					free(process_ids);
+					process_ids = NULL;
+					exit(1);
+				}
+			}
+		}
+		free(process_ids);
+		pthread_mutex_unlock(&queue_mutex);
+	}
+	else{
+		fprintf(stderr, "queue_checker couldn't acquire the lock, are you calling it from somewhere else?");
+		return;
+	}
 }
 
 /** ------------------------Problem 0-----------------------------------
@@ -337,7 +414,6 @@ extern void preempt(unsigned int cpu_id)
 
 	pcb_t *process = current[cpu_id];
 	current[cpu_id] -> state = PROCESS_READY;
-	current[cpu_id] = 0;
 
 	pthread_mutex_unlock(&current_mutex);
 	/*process->state = PROCESS_READY;*/
@@ -363,7 +439,6 @@ extern void yield(unsigned int cpu_id)
 
 	/*pcb_t *process = current[cpu_id];*/
 	current[cpu_id] -> state = PROCESS_WAITING;
-	current[cpu_id] = 0;
 
 	pthread_mutex_unlock(&current_mutex);
 	/*process->state = PROCESS_WAITING;*/
@@ -418,7 +493,7 @@ extern void wake_up(pcb_t *process)
 	if (scheduler_algorithm == PA){
 		// finding the processor with the lowest priority
 		int lowestPriorityFound = INT_MAX;
-		unsigned int i = 0, cpuBeingScheduled = 0;
+		unsigned int i = 0, cpuBeingScheduled = 69;
 		pthread_mutex_lock(&current_mutex);
 		while (i < cpu_count){
 			if (current[i] == NULL){
@@ -437,7 +512,7 @@ extern void wake_up(pcb_t *process)
 			i++;
 		}
 		pthread_mutex_unlock(&current_mutex);
-		if (lowestPriorityFound < priority_with_age(get_current_time(), process)){
+		if (cpuBeingScheduled != 69 && lowestPriorityFound < priority_with_age(get_current_time(), process)){
 			force_preempt(cpuBeingScheduled);
 		}
 	}
@@ -452,19 +527,30 @@ extern void wake_up(pcb_t *process)
  * Use the scheduler_algorithm variable (see student.h) in your scheduler to 
  * keep track of the scheduling algorithm you're using.
  */
-int main(int argc, char *argv[])
-{    /* FIX ME */
+
+const char *argp_program_version = "CSS 2200 Project 4 v1.0";
+const char *argp_program_bug_address = "hmai35@gatech.edu";
+static char doc[] = "You know what this is";
+static char args_doc[] = "ARG1 [ARG2...]";
+
+typedef struct arguments {
+    char *args[4];    // Non-option arguments
+} arguments;
+
+int main(int argc, char *argv[]){
 	scheduler_algorithm = FCFS;
 	age_weight = 0;
 	time_slice = 0; // -1 for FCFS
 
-	if (argc < 2 || argc > 4)
+	if (argc < 2 || argc > 5)
 	{
 		fprintf(stderr, "CS 2200 Project 4 -- Multithreaded OS Simulator\n"
-				"Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ]\n"
+				"Usage: ./os-sim <# CPUs> [ -r <time slice> | -p <age weight> ] -c\n"
 				"    Default : FCFS Scheduler\n"
-				"         -r : Round-Robin Scheduler\n1\n"
-				"         -p : Priority Aging Scheduler\n");
+				"         -r : Round-Robin Scheduler\n"
+				"         -p : Priority Aging Scheduler\n"
+				"         -c : Corruption Checker \n"	
+				);
 		return -1;
 	}
 	cpu_count = strtoul(argv[1], NULL, 0);

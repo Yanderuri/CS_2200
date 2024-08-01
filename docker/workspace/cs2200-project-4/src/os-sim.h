@@ -68,6 +68,7 @@ typedef struct _pcb_t
     op_t *pc;
     struct _pcb_t *next;
     unsigned int enqueue_time;
+    unsigned int arrival_time; // The time at which an applicaiton is launched (Also when the process first enters the ready queue)
 } pcb_t;
 
 /*

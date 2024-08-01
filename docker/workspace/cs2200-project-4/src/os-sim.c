@@ -91,8 +91,6 @@ typedef struct {
     pthread_mutex_t mutex;
     pthread_cond_t no_writers;
     int writers;
-    int num_idle;
-    int pending_proc;
 } irwl;
 
 #define IRWL_INIT(i) \
@@ -102,7 +100,7 @@ typedef struct {
 
 #define IRWL_READER_LOCK(i) \
     pthread_mutex_lock(&(i).mutex); \
-    while (((i).pending_proc > 0 && (i).num_idle > 0) || (i).writers - (i).num_idle > 0) \
+    while ((i).writers > 0) \
     { pthread_cond_wait(&(i).no_writers, &(i).mutex); }
 
 #define IRWL_READER_UNLOCK(i) \
@@ -116,31 +114,7 @@ typedef struct {
 #define IRWL_WRITER_UNLOCK(i) \
     pthread_mutex_lock(&(i).mutex); \
     (i).writers--; \
-    if ((i).writers - (i).num_idle == 0) \
-    { pthread_cond_signal(&(i).no_writers); } \
-    pthread_mutex_unlock(&(i).mutex);
-
-#define IRWL_INC_IDLE(i) \
-    pthread_mutex_lock(&(i).mutex); \
-    (i).num_idle++; \
-    if ((i).writers - (i).num_idle == 0) \
-    { pthread_cond_signal(&(i).no_writers); } \
-    pthread_mutex_unlock(&(i).mutex);
-
-#define IRWL_DEC_IDLE(i) \
-    pthread_mutex_lock(&(i).mutex); \
-    (i).num_idle--; \
-    pthread_mutex_unlock(&(i).mutex);
-
-#define IRWL_INC_PENDING_PROC(i) \
-    pthread_mutex_lock(&(i).mutex); \
-    (i).pending_proc++; \
-    pthread_mutex_unlock(&(i).mutex);
-
-#define IRWL_DEC_PENDING_PROC(i) \
-    pthread_mutex_lock(&(i).mutex); \
-    (i).pending_proc--; \
-    if ((i).pending_proc == 0) \
+    if ((i).writers == 0) \
     { pthread_cond_signal(&(i).no_writers); } \
     pthread_mutex_unlock(&(i).mutex);
 
@@ -203,13 +177,7 @@ static void simulator_supervisor_thread(void)
        display a line in the Gantt chart and check for pending I/O requests */
     while (1)
     {
-        print_gantt_line();
-
         pthread_mutex_lock(&simulator_mutex);
-        simulate_cpus();
-        simulate_io();
-        simulate_creat();
-        simulator_time++;
 
         /* Exit when all processes terminate */
         if (processes_terminated >= PROCESS_COUNT)
@@ -218,6 +186,11 @@ static void simulator_supervisor_thread(void)
             exit(0);
         }
 
+        print_gantt_line();
+        simulate_cpus();
+        simulate_io();
+        simulate_creat();
+        simulator_time++;
         pthread_mutex_unlock(&simulator_mutex);
 
         mt_safe_usleep(1);
@@ -285,14 +258,7 @@ static void simulator_cpu_thread(unsigned int cpu_id)
              * We can't lock the student_lock for idle(); otherwise we can't
              * print statistics while any CPU is idling.
              */
-            IRWL_WRITER_LOCK(student_lock)
-            IRWL_INC_IDLE(student_lock)
             idle(cpu_id);
-            if (simulator_cpu_data[cpu_id].current != NULL) {
-                IRWL_DEC_PENDING_PROC(student_lock)
-            }
-            IRWL_DEC_IDLE(student_lock)
-            IRWL_WRITER_UNLOCK(student_lock)
             break;
 
         case CPU_PREEMPT:
@@ -304,9 +270,6 @@ static void simulator_cpu_thread(unsigned int cpu_id)
         case CPU_YIELD:
             IRWL_WRITER_LOCK(student_lock)
             yield(cpu_id);
-            if (simulator_cpu_data[cpu_id].current != NULL) {
-                IRWL_DEC_PENDING_PROC(student_lock)
-            }
             IRWL_WRITER_UNLOCK(student_lock)
             break;
 
@@ -316,9 +279,6 @@ static void simulator_cpu_thread(unsigned int cpu_id)
             pthread_mutex_unlock(&simulator_mutex);
             IRWL_WRITER_LOCK(student_lock)
             terminate(cpu_id);
-            if (simulator_cpu_data[cpu_id].current != NULL) {
-                IRWL_DEC_PENDING_PROC(student_lock)
-            }
             IRWL_WRITER_UNLOCK(student_lock)
             break;
 
@@ -360,8 +320,6 @@ static void print_gantt_line(void)
      * Update number of processes in each state.
      */
     IRWL_READER_LOCK(student_lock)
-    pthread_mutex_lock(&simulator_mutex);
-
     for (n=0; n<PROCESS_COUNT; n++)
     {
         switch(processes[n].state)
@@ -410,7 +368,6 @@ static void print_gantt_line(void)
     }
     printf(" <\n");
 
-    pthread_mutex_unlock(&simulator_mutex);
     IRWL_READER_UNLOCK(student_lock)
 }
 
@@ -636,7 +593,6 @@ static void simulate_io(void)
         /* Call the student's wake_up() handler */
         pthread_mutex_unlock(&simulator_mutex);
         IRWL_WRITER_LOCK(student_lock);
-        IRWL_INC_PENDING_PROC(student_lock);
         wake_up(pcb);
         IRWL_WRITER_UNLOCK(student_lock);
         pthread_mutex_lock(&simulator_mutex);
@@ -652,7 +608,6 @@ static void simulate_creat(void)
         /* Call student's wake_up() handler */
         pthread_mutex_unlock(&simulator_mutex);
         IRWL_WRITER_LOCK(student_lock);
-        IRWL_INC_PENDING_PROC(student_lock);
         wake_up(&processes[processes_created]);
         IRWL_WRITER_UNLOCK(student_lock);
         pthread_mutex_lock(&simulator_mutex);
